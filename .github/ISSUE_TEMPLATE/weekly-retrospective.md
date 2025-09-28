@@ -1,8 +1,8 @@
 ---
 name: Weekly Retrospective
 about: 'Template is for creating weekly retrospectives '
-title: 'Weekly Retrospective #X - MonthDD'
-labels: documentation
+title: 'Weekly Retrospective #X - Month DD'
+labels: retrospectives
 assignees: Jake1025
 
 ---
