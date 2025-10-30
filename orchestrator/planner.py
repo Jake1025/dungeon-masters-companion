@@ -36,21 +36,45 @@ class Planner:
             "player_input": player_input,
             "gather_results": gather_results.to_json(),
         }
-        raw = self.adapter.request_json(
-            "plan",
-            PLAN_PROMPT,
-            payload,
-            validator=_validate_plan,
-        )
-        steps = [
-            PlanStep(
-                action=item["action"],
-                description=item.get("description", "").strip(),
-                payload=item.get("payload", {}),
+        # Tolerant parsing: don't hard-fail if the LLM drifts slightly.
+        try:
+            raw = self.adapter.request_json(
+                "plan",
+                PLAN_PROMPT,
+                payload,
+                validator=None,  # normalize instead of strict validation
             )
-            for item in raw["steps"]
-        ]
-        summary = raw.get("summary")
+        except Exception:
+            raw = {}
+
+        steps_raw = _get_list(raw, ["steps", "plan", "actions", "sequence"]) or []
+        steps: list[PlanStep] = []
+        for item in steps_raw:
+            if not isinstance(item, dict):
+                continue
+            action = _get_str(item, ["action", "type", "name", "op"]) or ""
+            if not action:
+                continue
+            description = _get_str(item, ["description", "desc", "text", "summary"]) or ""
+            payload_data = item.get("payload")
+            if not isinstance(payload_data, dict):
+                payload_data = item.get("data") if isinstance(item.get("data"), dict) else {}
+                if not isinstance(payload_data, dict):
+                    alt = item.get("arguments") if isinstance(item.get("arguments"), dict) else {}
+                    payload_data = alt if isinstance(alt, dict) else {}
+            steps.append(PlanStep(action=action, description=description.strip(), payload=payload_data))
+
+        if not steps:
+            # Fallback: ensure at least one step so narration can proceed.
+            steps = [
+                PlanStep(
+                    action="describe",
+                    description="Provide a short in-character response and recap.",
+                    payload={},
+                )
+            ]
+
+        summary = _get_str(raw, ["summary", "recap", "notes"]) or None
         return PlanOutput(steps=steps, summary=summary)
 
 
@@ -65,10 +89,31 @@ def _validate_plan(payload: Dict[str, Any]) -> None:
             raise ValueError("Each plan step must be an object")
         if "action" not in step:
             raise ValueError("Plan step missing 'action'")
-        if "description" not in step:
-            raise ValueError("Plan step missing 'description'")
+        # description is recommended but not strictly required
         if not isinstance(step.get("payload", {}), dict):
             raise ValueError("Plan step payload must be an object if provided")
 
 
 __all__ = ["Planner"]
+
+
+# Local tolerant extractors ------------------------------------------------------
+
+def _get_list(obj: Any, keys: list[str]) -> Optional[list[Any]]:
+    if not isinstance(obj, dict):
+        return None
+    for k in keys:
+        v = obj.get(k)
+        if isinstance(v, list):
+            return v
+    return None
+
+
+def _get_str(obj: Any, keys: list[str]) -> Optional[str]:
+    if not isinstance(obj, dict):
+        return None
+    for k in keys:
+        v = obj.get(k)
+        if isinstance(v, str):
+            return v
+    return None

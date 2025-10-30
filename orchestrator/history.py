@@ -43,12 +43,16 @@ class History:
         payload = {
             "turns": [asdict(turn) for turn in self.turns],
         }
-        data = adapter.request_json(
-            "summary",
-            SUMMARY_PROMPT,
-            payload,
-            validator=_validate_summary,
-        )
+        try:
+            data = adapter.request_json(
+                "summary",
+                SUMMARY_PROMPT,
+                payload,
+                validator=_validate_summary,
+            )
+        except Exception:
+            # Non-fatal: keep current turn buffer and try again later.
+            return
         summary = data.get("summary", "").strip()
         if summary:
             self.summary = HistorySummary(summary=summary, turns=self.turns[-self.keep_recent :])
