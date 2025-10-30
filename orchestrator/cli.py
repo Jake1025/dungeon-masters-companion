@@ -12,9 +12,31 @@ DEFAULT_GAME_STATE = {
         "id": "tavern",
         "lighting": "dim",
         "environment": "indoors",
-        "description": "A cozy tavern filled with the aroma of roasted meat and lively chatter.",
+        "description": "A cold tavern filled with snow and shivering patrons.",
     },
     "actors": {
+        "Bartender": {
+            "skills": {
+                "Persuasion": 14,
+                "Perception": 12,
+                "Arcana": 6,
+                "Dexterity": 10,
+                "Constitution": 14,
+                "Intelligence": 12,
+                "Wisdom": 14,
+                "Charisma": 16,
+                "Strength": 10,
+                "Stealth": 8,
+                "Intimidation": 10,
+                "Deception": 12,
+            },
+            "inventory": {
+                "gold": 200,
+                "items": ["bartender's kit", "flask of whiskey"],
+            },
+            "hp": 30,
+            "conditions": [],
+        },
         "Jake": {
             "skills": {
                 "Persuasion": 12,
