@@ -207,3 +207,12 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+HF_model_importer/HF_Llama_Downloader.ipynb
+HF_model_importer/Local_Llama_Loader.ipynb
+.gitignore
+notebooks/AutoRoll_MVP copy.ipynb
+.gitignore
+notebooks/MCP_Dice_Agent.ipynb
+notebooks/Ollama_Dice_Tool_Agent.ipynb
+notebooks/local_llama_dice_agent.py
+model_imports/Local_LlamaLoader_Llama31-8B-Instruct.ipynb
