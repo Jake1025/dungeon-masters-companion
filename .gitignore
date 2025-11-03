@@ -207,6 +207,23 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# python
+.venv/
+__pycache__/
+
+# docker
+.docker/
+docker-data/
+**/pgdata/
+# repo-specific: ignore Docker named volume folder if it ever shows up
+dmc-pgdata/
+
+# OS
+.DS_Store
+
+# env
+.env
 HF_model_importer/HF_Llama_Downloader.ipynb
 HF_model_importer/Local_Llama_Loader.ipynb
 .gitignore
