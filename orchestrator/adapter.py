@@ -11,11 +11,11 @@ logger = logging.getLogger(__name__)
 
 
 class LLMError(RuntimeError):
-    """Raised when the language model fails to provide valid JSON."""
+    """Raised when the language model fails to provide the requested output."""
 
 
 class LLMAdapter:
-    """Small wrapper around Ollama to enforce strict JSON contracts per stage."""
+    """Small wrapper around Ollama with helpers for JSON or free-form text."""
 
     def __init__(
         self,
@@ -34,6 +34,9 @@ class LLMAdapter:
         self.max_attempts = max(1, max_attempts)
         self.verbose = verbose
 
+    # ------------------------------------------------------------------
+    # JSON helper kept for components that still expect structured data.
+    # ------------------------------------------------------------------
     def request_json(
         self,
         stage: str,
@@ -42,14 +45,11 @@ class LLMAdapter:
         *,
         validator: Optional[Callable[[Dict[str, Any]], None]] = None,
     ) -> Dict[str, Any]:
-        """Call Ollama with deterministic settings and ensure JSON output."""
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": json.dumps(payload, separators=(",", ":"))},
         ]
-        options = dict(self.options)
-        temperature = self.stage_temperatures.get(stage, self.default_temperature)
-        options.setdefault("temperature", temperature)
+        options = self._stage_options(stage)
 
         if self.verbose:
             logger.debug("Stage %s payload:\n%s", stage, json.dumps(payload, indent=2))
@@ -84,7 +84,61 @@ class LLMAdapter:
                     }
                 )
 
-        raise LLMError(f"Stage '{stage}' failed to return valid JSON after {self.max_attempts} attempts. Last output: {attempts[-1] if attempts else '<none>'}")
+        raise LLMError(
+            f"Stage '{stage}' failed to return valid JSON after {self.max_attempts} attempts. Last output: {attempts[-1] if attempts else '<none>'}"
+        )
+
+    # ------------------------------------------------------------------
+    # Text helper for natural-language exchanges (preferred path now).
+    # ------------------------------------------------------------------
+    def request_text(
+        self,
+        stage: str,
+        system_prompt: str,
+        payload_text: str,
+    ) -> str:
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": payload_text},
+        ]
+        options = self._stage_options(stage)
+
+        if self.verbose:
+            logger.debug("Stage %s prompt:\n%s", stage, payload_text)
+
+        attempts: List[str] = []
+        for idx in range(self.max_attempts):
+            response = ollama.chat(
+                model=self.model,
+                messages=messages,
+                options=options,
+            )
+            content = self._extract_content(response)
+            attempts.append(content)
+            if self.verbose:
+                logger.debug("Stage %s attempt %s raw response: %s", stage, idx + 1, content)
+            content = content.strip()
+            if content:
+                return content
+            messages.append(
+                {
+                    "role": "system",
+                    "content": "Please provide a detailed natural-language response based on the supplied context.",
+                }
+            )
+
+        raise LLMError(
+            f"Stage '{stage}' failed to return text after {self.max_attempts} attempts. Last output: {attempts[-1] if attempts else '<none>'}"
+        )
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    def _stage_options(self, stage: str) -> Dict[str, Any]:
+        options = dict(self.options)
+        temperature = self.stage_temperatures.get(stage, self.default_temperature)
+        options.setdefault("temperature", temperature)
+        return options
 
     @staticmethod
     def _extract_content(response: Any) -> str:
@@ -116,17 +170,12 @@ class LLMAdapter:
     def _strip_code_fence(text: str) -> str:
         if text.startswith("```"):
             lines = text.splitlines()
-            # drop first and last fence lines
             core = [line for line in lines if not line.startswith("```")]
             return "\n".join(core).strip()
         return text
 
     @staticmethod
     def _parse_minidict(text: str) -> Optional[Dict[str, Any]]:
-        """
-        Support a tiny "key: value" DSL as a last resort; used when the model
-        forgets to emit strict JSON despite the format hint.
-        """
         if "{" in text or "[" in text:
             return None
         candidate: Dict[str, Any] = {}
