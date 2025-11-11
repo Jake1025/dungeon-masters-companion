@@ -1,70 +1,36 @@
 from __future__ import annotations
 
-from dataclasses import asdict
-from typing import Any, Dict, List, Optional
-
-from .adapter import LLMAdapter
-from .schemas import HistorySummary, HistoryTurn
-
-
-SUMMARY_PROMPT = (
-    "You are the campaign chronicler. Summarize the adventure so far in under 120 words. "
-    "Return JSON {\"summary\": \"...\"}. Use only the provided turns."
-)
+from typing import Iterable, List, Sequence, Tuple
 
 
 class History:
-    """Tracks player/DM turns and maintains a running summary when context grows."""
+    """Keeps a rolling window of conversational turns as plain text."""
 
-    def __init__(self, max_turns: int = 8, keep_recent: int = 4) -> None:
-        self.turns: List[HistoryTurn] = []
-        self.summary: Optional[HistorySummary] = None
+    def __init__(self, max_turns: int = 10) -> None:
         self.max_turns = max_turns
-        self.keep_recent = keep_recent
+        self.turns: List[Tuple[str, str]] = []
 
-    def add_player_turn(self, player_input: str) -> None:
-        payload = {"player_input": player_input}
-        self.turns.append(HistoryTurn(role="player", payload=payload))
+    def add_player_turn(self, text: str) -> None:
+        self._add("player", text)
 
-    def add_dm_turn(self, narration: Dict[str, Any]) -> None:
-        self.turns.append(HistoryTurn(role="dm", payload=narration))
+    def add_dm_turn(self, text: str) -> None:
+        self._add("narrator", text)
 
-    def as_context(self) -> Dict[str, Any]:
-        context = {
-            "turns": [asdict(turn) for turn in self.turns[-self.max_turns :]],
-        }
-        if self.summary is not None:
-            context["summary"] = self.summary.summary
-        return context
+    def recent(self, limit: int | None = None) -> Sequence[Tuple[str, str]]:
+        lim = limit or self.max_turns
+        return self.turns[-lim:]
 
-    def maybe_summarize(self, adapter: LLMAdapter) -> None:
-        if len(self.turns) < self.max_turns:
+    def as_text(self, limit: int | None = None) -> str:
+        lines = [f"{role.title()}: {content}" for role, content in self.recent(limit)]
+        return "\n".join(lines).strip()
+
+    def _add(self, role: str, content: str) -> None:
+        text = content.strip()
+        if not text:
             return
-        payload = {
-            "turns": [asdict(turn) for turn in self.turns],
-        }
-        try:
-            data = adapter.request_json(
-                "summary",
-                SUMMARY_PROMPT,
-                payload,
-                validator=_validate_summary,
-            )
-        except Exception:
-            # Non-fatal: keep current turn buffer and try again later.
-            return
-        summary = data.get("summary", "").strip()
-        if summary:
-            self.summary = HistorySummary(summary=summary, turns=self.turns[-self.keep_recent :])
-            self.turns = self.turns[-self.keep_recent :]
-
-
-def _validate_summary(payload: Dict[str, Any]) -> None:
-    if not isinstance(payload, dict):
-        raise TypeError("Summary payload must be an object")
-    summary = payload.get("summary")
-    if not isinstance(summary, str) or not summary.strip():
-        raise ValueError("Summary must contain a non-empty 'summary' string")
+        self.turns.append((role, text))
+        if len(self.turns) > self.max_turns:
+            self.turns = self.turns[-self.max_turns :]
 
 
 __all__ = ["History"]
