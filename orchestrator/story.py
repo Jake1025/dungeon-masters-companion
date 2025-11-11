@@ -1,96 +1,126 @@
 from __future__ import annotations
 
-import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Iterable, List, Sequence
 
 
 @dataclass(frozen=True)
-class CanonEntry:
-    title: str
-    synopsis: str
-    excerpt: str
-    keywords: Sequence[str]
+class StoryNode:
+    """Single story location/person/clue with lightweight connections."""
+
+    key: str
+    description: str
+    connections: Sequence[str] = field(default_factory=tuple)
 
 
-DEFAULT_OUTLINE = """
-Act I: Arrival at the Shrouded Archives
-- The traveler reaches the abandoned mountain library.
-- Whispers hint at a hidden chronicle that rewrites history.
-
-Act II: Echoes of the Chronicle
-- Guardian spirits test the traveler's intent.
-- Secret halls reveal conflicting versions of the past.
-
-Act III: Choosing the True Thread
-- The traveler must decide which memory to preserve.
-- The world shifts to reflect the chosen truth.
-"""
-
-
-DEFAULT_CANON: List[CanonEntry] = [
-    CanonEntry(
-        title="The Windway Stair",
-        synopsis="A spiraling stairwell carved through glacier glass. Voices ride the wind, repeating fragments of lost chapters.",
-        excerpt="Each landing held a frozen lectern. Upon the ice lay pages that thawed at the traveler's touch, sketching scenes of a city that never was.",
-        keywords=("stair", "wind", "lectern", "city"),
+DEFAULT_NODES = [
+    StoryNode(
+        key="Copper Cup",
+        description=(
+            "A low-beamed harbor tavern. Lanterns swing above crowded tables, and the air smells of "
+            "stew, sea-salt, and woodsmoke. The barkeep Mara watches everything from behind the counter."
+        ),
+        connections=("Bar Counter", "Mara", "Brin", "Edda", "Thom", "Lysa", "Stair Landing"),
     ),
-    CanonEntry(
-        title="Hall of Divergent Mirrors",
-        synopsis="Mirrors reflect possible presents rather than the past.",
-        excerpt="In one mirror the traveler wore an archivist's robes; in another, the hall stood crowded with petitioners pleading for their memories to be recorded.",
-        keywords=("mirror", "hall", "memory", "petition"),
+    StoryNode(
+        key="Bar Counter",
+        description="Shelves of bottles, a till, and crates tucked beneath. A loose crate hides something wedged behind it.",
+        connections=("Mara", "Hidden Scrap", "Copper Cup"),
     ),
-    CanonEntry(
-        title="The Ember Scriptorium",
-        synopsis="An underground chamber warmed by braziers that burn without fuel. Ash motes form shifting letters in the air.",
-        excerpt="The chronicler-spirit asked only one price: speak a memory aloud and watch the flames devour it, leaving a brighter ember in exchange.",
-        keywords=("ember", "flame", "scriptorium", "memory"),
+    StoryNode(
+        key="Mara",
+        description="The proprietor. Married to Brin. Her wedding anniversary is April 15th. Brisk, perceptive, and inclined to help if treated respectfully.",
+        connections=("Bar Counter", "Hidden Scrap", "Storeroom Door", "Brin"),
     ),
-    CanonEntry(
-        title="Garden of Unchosen Paths",
-        synopsis="A courtyard where plants grow into symbols of stories that were never told.",
-        excerpt="Vines shaped into question marks clung to an archway, trailing petals that shimmered between silver and dusk-blue whenever a decision was near.",
-        keywords=("garden", "path", "decision", "vines"),
+    StoryNode(
+        key="Brin",
+        description="Mara's husband. A weather-beaten sailor with a limp. Forgetful of his wedding anniversary date.",
+        connections=("Copper Cup", "Stair Landing", "Storeroom Door", "Mara"),
+    ),
+    StoryNode(
+        key="Edda",
+        description="A scholar cataloging tavern legends, forever scribbling into a leather folio.",
+        connections=("Copper Cup", "Hidden Scrap", "Storeroom Door"),
+    ),
+    StoryNode(
+        key="Thom",
+        description="An off-duty guard who prefers order and dislikes surprises upstairs.",
+        connections=("Copper Cup", "Stair Landing", "Storeroom Door"),
+    ),
+    StoryNode(
+        key="Lysa",
+        description="A traveling bard tuning a battered lute, eager for new tales.",
+        connections=("Copper Cup", "Hidden Scrap", "Storeroom Door"),
+    ),
+    StoryNode(
+        key="Hidden Scrap",
+        description="A grease-stained note tucked behind a loose crate: 'cellar restock / upstairs lock is our wedding anniversary date'.",
+        connections=("Bar Counter", "Storeroom Door", "Mara", "Brin"),
+    ),
+    StoryNode(
+        key="Stair Landing",
+        description="A narrow staircase creaks toward the upper rooms. A rope discourages casual wanderers.",
+        connections=("Copper Cup", "Thom", "Storeroom Door"),
+    ),
+    StoryNode(
+        key="Storeroom Door",
+        description="A stout oak door with a brass four-dial combination lock. The correct code is 0415.",
+        connections=("Hidden Scrap", "Mara", "Stair Landing"),
     ),
 ]
 
 
-class StoryCanon:
-    """Extremely lightweight search over pre-written canon snippets."""
+DEFAULT_START_KEYS = ["Copper Cup", "Bar Counter", "Mara", "Brin", "Edda", "Thom", "Lysa", "Stair Landing"]
 
-    def __init__(self, entries: Iterable[CanonEntry] | None = None, outline: str | None = None) -> None:
-        self.entries: List[CanonEntry] = list(entries or DEFAULT_CANON)
-        self.outline = outline or DEFAULT_OUTLINE
+STARTING_STATE = (
+    "You arrived at The Copper Cup just past dusk. The storm outside rattles the shutters, "
+    "Mara keeps a wary eye on newcomers, and whispers mention a locked storeroom upstairs."
+)
 
-    def search(self, query: str, limit: int = 3) -> List[CanonEntry]:
-        words = _tokenize(query)
-        if not words:
-            return self.entries[:limit]
-        scored: List[tuple[int, CanonEntry]] = []
-        for entry in self.entries:
-            entry_words = {kw.lower() for kw in entry.keywords}
-            score = sum(2 for kw in entry_words if kw in words)
-            score += sum(1 for word in words if word in entry.synopsis.lower())
-            score += sum(1 for word in words if word in entry.excerpt.lower())
-            if score:
-                scored.append((score, entry))
-        if not scored:
-            return self.entries[:limit]
-        scored.sort(key=lambda item: item[0], reverse=True)
-        return [entry for _, entry in scored[:limit]]
+BEAT_LIST = [
+    "Set the tavern mood and introduce at least one patron.",
+    "Surface a hint about the locked upstairs room.",
+    "Discover the hidden scrap with the combination clue.",
+    "Use the code to open the storeroom door.",
+]
 
 
-def format_entries(entries: Sequence[CanonEntry]) -> str:
-    blocks = []
-    for idx, entry in enumerate(entries, start=1):
-        block = [f"[{idx}] {entry.title}", f"Synopsis: {entry.synopsis}", f"Excerpt: {entry.excerpt}"]
-        blocks.append("\n".join(block))
-    return "\n\n".join(blocks)
+class StoryGraph:
+    """Minimal lookup/describe helper for story nodes."""
+
+    def __init__(
+        self,
+        nodes: Iterable[StoryNode] | None = None,
+        initial_keys: Sequence[str] | None = None,
+    ) -> None:
+        self.nodes: List[StoryNode] = list(nodes or DEFAULT_NODES)
+        self.by_key = {node.key: node for node in self.nodes}
+        defaults = initial_keys or DEFAULT_START_KEYS
+        self.initial_keys = [key for key in defaults if key in self.by_key]
+        if not self.initial_keys:
+            self.initial_keys = list(self.by_key.keys())
+
+    def describe(self, keys: Sequence[str]) -> str:
+        lines = []
+        for key in keys:
+            node = self.by_key.get(key)
+            if not node:
+                continue
+            lines.append(f"{key}: {node.description}")
+        return "\n".join(lines)
+
+    def list_connections(self, keys: Sequence[str]) -> str:
+        lines = []
+        for key in keys:
+            node = self.by_key.get(key)
+            if not node or not node.connections:
+                continue
+            connections = ", ".join(node.connections)
+            lines.append(f"{key} -> {connections}")
+        return "\n".join(lines)
+
+    def get_node(self, key: str) -> StoryNode | None:
+        return self.by_key.get(key)
 
 
-def _tokenize(text: str) -> set[str]:
-    return {token for token in re.findall(r"[a-zA-Z]+", text.lower()) if len(token) > 2}
-
-
-__all__ = ["StoryCanon", "CanonEntry", "format_entries", "DEFAULT_OUTLINE"]
+__all__ = ["StoryGraph", "StoryNode", "DEFAULT_START_KEYS", "STARTING_STATE", "BEAT_LIST"]
