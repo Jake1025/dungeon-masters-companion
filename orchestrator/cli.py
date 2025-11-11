@@ -1,15 +1,8 @@
 from __future__ import annotations
 
 import argparse
-import json
 
 from .pipeline import Orchestrator
-
-
-DEFAULT_GAME_STATE = {
-    "location": "Shrouded Archives",
-    "mood": "windswept and echoing with distant whispers",
-}
 
 
 def main() -> None:
@@ -18,7 +11,7 @@ def main() -> None:
     parser.add_argument("--verbose", action="store_true", help="Enable adapter debug logging")
     args = parser.parse_args()
 
-    orchestrator = Orchestrator(initial_state=DEFAULT_GAME_STATE, model=args.model, verbose=args.verbose)
+    orchestrator = Orchestrator(model=args.model, verbose=args.verbose)
 
     print("Story explorer. Type 'quit' to leave.")
     while True:
@@ -38,17 +31,18 @@ def main() -> None:
         print(f"\n{narration['ic']}\n")
         if narration.get("recap"):
             print(f"[Recap] {narration['recap']}\n")
-
-        canon = turn.get("canon", [])
-        if canon:
-            print("Referenced canon:")
-            for entry in canon:
-                print(f"  - {entry['title']}: {entry['synopsis']}")
+        unlocked = turn.get("unlocked_keys") or []
+        if unlocked:
+            print("[New Keys] " + ", ".join(unlocked))
             print()
 
         if args.verbose:
-            print("[Debug] History snapshot:")
-            print(json.dumps(turn["history"], indent=2))
+            print(f"[Plan] {turn.get('plan', '')}")
+            validation = turn.get("validation", {})
+            if validation:
+                print(f"[Validation] {validation.get('verdict', '')}: {validation.get('notes', '')}")
+            print("[Debug] Active keys:")
+            print(", ".join(turn.get("active_keys", [])))
 
 
 if __name__ == "__main__":
