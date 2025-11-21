@@ -1,49 +1,49 @@
-CREATE SCHEMA story;
+-- schema: story
+CREATE SCHEMA IF NOT EXISTS story;
 
--- Authorial outline = intended beats
-CREATE TABLE story.outline_beats (
+-- A campaign (one-shot or multi-session arc)
+CREATE TABLE story.campaigns (
   id           uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  campaign_key text NOT NULL,
-  seq          int  NOT NULL,       -- order
+  key          citext UNIQUE NOT NULL,     -- e.g., 'copper-cup'
   title        text NOT NULL,
-  description  text NOT NULL,
-  gating_flags text[] DEFAULT '{}', -- e.g., ['has_key_of_thorns']
-  UNIQUE (campaign_key, seq)
+  author       text,
+  created_at   timestamptz NOT NULL DEFAULT now()
 );
 
--- Canon “facts” the validator enforces (and that Executors must not contradict)
-CREATE TABLE story.facts (
-  id           uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
-  session_id   uuid NOT NULL REFERENCES core.sessions(id) ON DELETE CASCADE,
-  key          citext NOT NULL,     -- e.g., 'npc.aldrin.alive'
-  value        jsonb  NOT NULL,     -- scalar or structured
-  provenance   uuid   REFERENCES core.citations(id),
-  UNIQUE (session_id, key)
+-- Nodes are your places/people/clues (your StoryNode)
+CREATE TABLE story.nodes (
+  id            uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  campaign_id   uuid NOT NULL REFERENCES story.campaigns(id) ON DELETE CASCADE,
+  key           citext NOT NULL,           -- 'Copper Cup', 'Mara', 'Hidden Scrap'
+  description   text NOT NULL,
+  attrs         jsonb NOT NULL DEFAULT '{}'::jsonb,  -- optional metadata, tags, flags
+  UNIQUE (campaign_id, key)
 );
 
--- Player decisions, normalized and timestamped, linkable to a beat
-CREATE TABLE story.decisions (
-  id           bigserial PRIMARY KEY,
-  session_id   uuid NOT NULL REFERENCES core.sessions(id) ON DELETE CASCADE,
-  beat_id      uuid REFERENCES story.outline_beats(id),
-  ts           timestamptz NOT NULL DEFAULT now(),
-  actor        text NOT NULL,       -- 'player'
-  action_key   text NOT NULL,       -- 'accept_quest', 'attack_guard', etc.
-  payload      jsonb NOT NULL       -- free-form details (dialogue, item ids)
+-- Edges connect nodes (typed & directed)
+CREATE TABLE story.edges (
+  id            uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  campaign_id   uuid NOT NULL REFERENCES story.campaigns(id) ON DELETE CASCADE,
+  src_node_id   uuid NOT NULL REFERENCES story.nodes(id) ON DELETE CASCADE,
+  dst_node_id   uuid NOT NULL REFERENCES story.nodes(id) ON DELETE CASCADE,
+  kind          text NOT NULL DEFAULT 'linked',  -- 'linked','knows','located_at', etc.
+  label         text,                             -- optional display label
+  UNIQUE (campaign_id, src_node_id, dst_node_id, kind)
 );
 
--- Rolling synopsis materialized per session (LLM reads this a lot)
-CREATE TABLE story.synopsis_versions (
-  id           bigserial PRIMARY KEY,
-  session_id   uuid NOT NULL REFERENCES core.sessions(id) ON DELETE CASCADE,
-  ts           timestamptz NOT NULL DEFAULT now(),
-  summary_md   text NOT NULL,       -- human-readable markdown
-  summary_json jsonb NOT NULL       -- machine-usable outline (optional)
+-- Beats (authorial intent checklist)
+CREATE TABLE story.beats (
+  id            uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  campaign_id   uuid NOT NULL REFERENCES story.campaigns(id) ON DELETE CASCADE,
+  ord           int NOT NULL,
+  text          text NOT NULL,
+  UNIQUE (campaign_id, ord)
 );
 
--- Latest synopsis view for fast access
-CREATE VIEW story.synopsis_latest AS
-SELECT DISTINCT ON (session_id)
-  session_id, id AS synopsis_id, ts, summary_md, summary_json
-FROM story.synopsis_versions
-ORDER BY session_id, ts DESC;
+-- Fast search (optional but recommended)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+ALTER TABLE story.nodes ADD COLUMN IF NOT EXISTS search tsvector GENERATED ALWAYS AS (
+  to_tsvector('english', coalesce(key,'') || ' ' || coalesce(description,''))
+) STORED;
+CREATE INDEX IF NOT EXISTS nodes_search_idx ON story.nodes USING GIN (search);
+CREATE INDEX IF NOT EXISTS nodes_key_trgm ON story.nodes USING GIN (key gin_trgm_ops);
