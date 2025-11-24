@@ -122,5 +122,32 @@ class StoryGraph:
     def get_node(self, key: str) -> StoryNode | None:
         return self.by_key.get(key)
 
+    def upsert_node(self, node: StoryNode) -> StoryNode:
+        """
+        Add a node to the graph or merge new connections/description into an existing one.
+        Connections are stored symmetrically but the caller should ensure reciprocity.
+        """
+        existing = self.by_key.get(node.key)
+        if existing:
+            merged_connections = sorted(set(existing.connections) | set(node.connections))
+            description = node.description or existing.description
+            merged = StoryNode(key=existing.key, description=description, connections=tuple(merged_connections))
+            for idx, current in enumerate(self.nodes):
+                if current.key == node.key:
+                    self.nodes[idx] = merged
+                    break
+        else:
+            merged = StoryNode(key=node.key, description=node.description, connections=tuple(node.connections))
+            self.nodes.append(merged)
+
+        self.by_key[node.key] = merged
+        return merged
+
+    def upsert_nodes(self, nodes: Iterable[StoryNode]) -> List[StoryNode]:
+        merged: List[StoryNode] = []
+        for node in nodes:
+            merged.append(self.upsert_node(node))
+        return merged
+
 
 __all__ = ["StoryGraph", "StoryNode", "DEFAULT_START_KEYS", "STARTING_STATE", "BEAT_LIST"]

@@ -1,0 +1,284 @@
+{
+  "beat_state": {
+    "current_index": 1,
+    "current": "Surface a hint about the locked upstairs room.",
+    "next": "Discover the hidden scrap with the combination clue."
+  },
+  "active_keys": [
+    "Bar Counter",
+    "Brin",
+    "Copper Cup",
+    "Edda",
+    "Lysa",
+    "Mara",
+    "Stair Landing",
+    "Thom"
+  ],
+  "focus": [
+    "Copper Cup"
+  ],
+  "discovered_keys": [
+    "Bar Counter",
+    "Brin",
+    "Copper Cup",
+    "Edda",
+    "Lysa",
+    "Mara",
+    "Stair Landing",
+    "Thom"
+  ],
+  "session_summary": "Player: I walk up to the bar",
+  "history": [
+    {
+      "role": "player",
+      "content": "I walk up to the bar"
+    },
+    {
+      "role": "narrator",
+      "content": "The murmur of the tavern settles around you as you take a seat at the bar. Mara, wiping a mug with a rag, eyes the narrow staircase that climbs up to the upper rooms. \"The rope"
+    }
+  ],
+  "nodes": [
+    {
+      "key": "Copper Cup",
+      "description": "A low-beamed harbor tavern. Lanterns swing above crowded tables, and the air smells of stew, sea-salt, and woodsmoke. The barkeep Mara watches everything from behind the counter.",
+      "connections": [
+        "Bar Counter",
+        "Mara",
+        "Brin",
+        "Edda",
+        "Thom",
+        "Lysa",
+        "Stair Landing"
+      ],
+      "flags": {
+        "active": true,
+        "focus": true,
+        "discovered": true
+      }
+    },
+    {
+      "key": "Bar Counter",
+      "description": "Shelves of bottles, a till, and crates tucked beneath. A loose crate hides something wedged behind it.",
+      "connections": [
+        "Mara",
+        "Hidden Scrap",
+        "Copper Cup"
+      ],
+      "flags": {
+        "active": true,
+        "focus": false,
+        "discovered": true
+      }
+    },
+    {
+      "key": "Mara",
+      "description": "The proprietor. Married to Brin. Her wedding anniversary is April 15th. Brisk, perceptive, and inclined to help if treated respectfully.",
+      "connections": [
+        "Bar Counter",
+        "Hidden Scrap",
+        "Storeroom Door",
+        "Brin"
+      ],
+      "flags": {
+        "active": true,
+        "focus": false,
+        "discovered": true
+      }
+    },
+    {
+      "key": "Brin",
+      "description": "Mara's husband. A weather-beaten sailor with a limp. Forgetful of his wedding anniversary date.",
+      "connections": [
+        "Copper Cup",
+        "Stair Landing",
+        "Storeroom Door",
+        "Mara"
+      ],
+      "flags": {
+        "active": true,
+        "focus": false,
+        "discovered": true
+      }
+    },
+    {
+      "key": "Edda",
+      "description": "A scholar cataloging tavern legends, forever scribbling into a leather folio.",
+      "connections": [
+        "Copper Cup",
+        "Hidden Scrap",
+        "Storeroom Door"
+      ],
+      "flags": {
+        "active": true,
+        "focus": false,
+        "discovered": true
+      }
+    },
+    {
+      "key": "Thom",
+      "description": "An off-duty guard who prefers order and dislikes surprises upstairs.",
+      "connections": [
+        "Copper Cup",
+        "Stair Landing",
+        "Storeroom Door"
+      ],
+      "flags": {
+        "active": true,
+        "focus": false,
+        "discovered": true
+      }
+    },
+    {
+      "key": "Lysa",
+      "description": "A traveling bard tuning a battered lute, eager for new tales.",
+      "connections": [
+        "Copper Cup",
+        "Hidden Scrap",
+        "Storeroom Door"
+      ],
+      "flags": {
+        "active": true,
+        "focus": false,
+        "discovered": true
+      }
+    },
+    {
+      "key": "Hidden Scrap",
+      "description": "A grease-stained note tucked behind a loose crate: 'cellar restock / upstairs lock is our wedding anniversary date'.",
+      "connections": [
+        "Bar Counter",
+        "Storeroom Door",
+        "Mara",
+        "Brin"
+      ],
+      "flags": {
+        "active": false,
+        "focus": false,
+        "discovered": false
+      }
+    },
+    {
+      "key": "Stair Landing",
+      "description": "A narrow staircase creaks toward the upper rooms. A rope discourages casual wanderers.",
+      "connections": [
+        "Copper Cup",
+        "Thom",
+        "Storeroom Door"
+      ],
+      "flags": {
+        "active": true,
+        "focus": false,
+        "discovered": true
+      }
+    },
+    {
+      "key": "Storeroom Door",
+      "description": "A stout oak door with a brass four-dial combination lock. The correct code is 0415.",
+      "connections": [
+        "Hidden Scrap",
+        "Mara",
+        "Stair Landing"
+      ],
+      "flags": {
+        "active": false,
+        "focus": false,
+        "discovered": false
+      }
+    }
+  ],
+  "edges": [
+    {
+      "src": "Copper Cup",
+      "dst": "Bar Counter"
+    },
+    {
+      "src": "Copper Cup",
+      "dst": "Mara"
+    },
+    {
+      "src": "Copper Cup",
+      "dst": "Brin"
+    },
+    {
+      "src": "Copper Cup",
+      "dst": "Edda"
+    },
+    {
+      "src": "Copper Cup",
+      "dst": "Thom"
+    },
+    {
+      "src": "Copper Cup",
+      "dst": "Lysa"
+    },
+    {
+      "src": "Copper Cup",
+      "dst": "Stair Landing"
+    },
+    {
+      "src": "Bar Counter",
+      "dst": "Mara"
+    },
+    {
+      "src": "Bar Counter",
+      "dst": "Hidden Scrap"
+    },
+    {
+      "src": "Mara",
+      "dst": "Hidden Scrap"
+    },
+    {
+      "src": "Mara",
+      "dst": "Storeroom Door"
+    },
+    {
+      "src": "Mara",
+      "dst": "Brin"
+    },
+    {
+      "src": "Brin",
+      "dst": "Stair Landing"
+    },
+    {
+      "src": "Brin",
+      "dst": "Storeroom Door"
+    },
+    {
+      "src": "Edda",
+      "dst": "Hidden Scrap"
+    },
+    {
+      "src": "Edda",
+      "dst": "Storeroom Door"
+    },
+    {
+      "src": "Thom",
+      "dst": "Stair Landing"
+    },
+    {
+      "src": "Thom",
+      "dst": "Storeroom Door"
+    },
+    {
+      "src": "Lysa",
+      "dst": "Hidden Scrap"
+    },
+    {
+      "src": "Lysa",
+      "dst": "Storeroom Door"
+    },
+    {
+      "src": "Hidden Scrap",
+      "dst": "Storeroom Door"
+    },
+    {
+      "src": "Hidden Scrap",
+      "dst": "Brin"
+    },
+    {
+      "src": "Stair Landing",
+      "dst": "Storeroom Door"
+    }
+  ]
+}

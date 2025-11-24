@@ -5,6 +5,7 @@ import logging
 from typing import Any, Callable, Dict, List, Mapping, Optional
 
 import ollama
+from ollama import ResponseError
 
 
 logger = logging.getLogger(__name__)
@@ -108,12 +109,15 @@ class LLMAdapter:
 
         attempts: List[str] = []
         for idx in range(self.max_attempts):
-            response = ollama.chat(
-                model=self.model,
-                messages=messages,
-                options=options,
-            )
-            content = self._extract_content(response)
+            try:
+                response = ollama.chat(
+                    model=self.model,
+                    messages=messages,
+                    options=options,
+                )
+                content = self._extract_content(response)
+            except ResponseError as exc:
+                content = self._extract_raw_from_error(exc) or ""
             attempts.append(content)
             if self.verbose:
                 logger.debug("Stage %s attempt %s raw response: %s", stage, idx + 1, content)
@@ -173,6 +177,23 @@ class LLMAdapter:
             core = [line for line in lines if not line.startswith("```")]
             return "\n".join(core).strip()
         return text
+
+    @staticmethod
+    def _extract_raw_from_error(exc: Exception) -> str | None:
+        """
+        Best-effort recovery for Ollama ResponseError that includes `raw='...'`.
+        This happens when the server tries to parse a tool call but receives plain text.
+        """
+        message = str(exc)
+        marker = "raw='"
+        start = message.find(marker)
+        if start == -1:
+            return None
+        start += len(marker)
+        end = message.find("'", start)
+        if end == -1:
+            return None
+        return message[start:end]
 
     @staticmethod
     def _parse_minidict(text: str) -> Optional[Dict[str, Any]]:

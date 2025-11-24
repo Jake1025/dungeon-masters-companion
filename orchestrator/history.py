@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from typing import Iterable, List, Sequence, Tuple
+from typing import Iterable, List, Optional, Sequence, Tuple
 
 
 class History:
     """Keeps a rolling window of conversational turns as plain text."""
 
-    def __init__(self, max_turns: int = 10) -> None:
+    def __init__(self, max_turns: Optional[int] = None) -> None:
+        """
+        max_turns: None means unbounded; otherwise keep only the most recent N turns.
+        """
         self.max_turns = max_turns
         self.turns: List[Tuple[str, str]] = []
 
@@ -29,7 +32,7 @@ class History:
         if not text:
             return
         self.turns.append((role, text))
-        if len(self.turns) > self.max_turns:
+        if self.max_turns is not None and len(self.turns) > self.max_turns:
             self.turns = self.turns[-self.max_turns :]
 
 
