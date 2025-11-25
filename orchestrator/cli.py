@@ -2,6 +2,9 @@ from __future__ import annotations
 
 import argparse
 import logging
+from datetime import datetime
+from pathlib import Path
+import json
 
 from .pipeline import Orchestrator
 from .story import STARTING_STATE
@@ -25,9 +28,11 @@ def main() -> None:
         "--starting-state",
         help="Override the starting state text shown to the model",
     )
+    parser.add_argument("--session-name", default="session", help="Name for this play session (used in state folder)")
     parser.add_argument(
-        "--state-dump",
-        help="Optional path to write a JSON snapshot of state after each turn (for external viewers)",
+        "--state-root",
+        default="state",
+        help="Directory root to store session state snapshots (folder per session will be created inside)",
     )
     parser.add_argument("--verbose", action="store_true", help="Enable adapter debug logging")
     args = parser.parse_args()
@@ -43,6 +48,13 @@ def main() -> None:
         starting_state=args.starting_state or STARTING_STATE,
     )
 
+    session_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    session_dir: Path | None = None
+    if args.state_root:
+        session_dir = Path(args.state_root) / f"{session_stamp}_{args.session_name}"
+        session_dir.mkdir(parents=True, exist_ok=True)
+        print(f"Session snapshots will be written to: {session_dir}")
+
     print("Story explorer. Type 'quit' to leave.")
     try:
         intro = orchestrator.generate_intro()
@@ -52,6 +64,13 @@ def main() -> None:
     except Exception:
         # Fall back to plain starting state if intro generation fails
         print(f"\n[Intro] {orchestrator.starting_state}\n")
+    # Save initial snapshot as turn_000 if session dir configured
+    if session_dir:
+        try:
+            snapshot = orchestrator.snapshot()
+            (session_dir / "turn_000.json").write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
+        except Exception as exc:
+            logging.warning("Failed to write initial state snapshot: %s", exc)
     while True:
         try:
             player_line = input("> ").strip()
@@ -101,13 +120,11 @@ def main() -> None:
                 print("[Summary]")
                 print(summary)
 
-        if args.state_dump:
+        if session_dir:
             try:
-                import json
-                from pathlib import Path
-
                 snapshot = orchestrator.snapshot()
-                Path(args.state_dump).write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
+                filename = f"turn_{turn.get('turn', orchestrator.turn_index):03d}.json"
+                (session_dir / filename).write_text(json.dumps(snapshot, indent=2), encoding="utf-8")
             except Exception as exc:
                 logging.warning("Failed to write state snapshot: %s", exc)
 

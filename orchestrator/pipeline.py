@@ -153,6 +153,7 @@ class Orchestrator:
         self.beats = BeatTracker(self.beat_list)
         self.summary = SessionSummary()
         self.story_source: PostgresStorySource | None = None
+        self.turn_index: int = 0
 
         graph = story_graph
         loaded_beats: List[str] | None = None
@@ -216,8 +217,10 @@ class Orchestrator:
         self.history.add_dm_turn(dm_entry)
         if recap:
             self.summary.add("Recap", recap)
+        self.turn_index += 1
 
         return {
+            "turn": self.turn_index,
             "plan": plan,
             "validation": {"verdict": verdict, "notes": notes, "advance": advance},
             "narration": {"ic": narrative, "recap": recap},
@@ -274,6 +277,7 @@ class Orchestrator:
         history_turns = [{"role": role, "content": content} for role, content in self.history.turns]
 
         return {
+            "turn": self.turn_index,
             "beat_state": {
                 "current_index": self.beats.index,
                 "current": self.beats.current(),

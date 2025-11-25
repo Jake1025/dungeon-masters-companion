@@ -49,16 +49,33 @@ def build_dot(snapshot: dict) -> str:
     return "\n".join(lines)
 
 
+def list_turn_files(session_dir: Path) -> list[Path]:
+    if not session_dir.exists():
+        st.warning(f"Session folder not found: {session_dir}")
+        return []
+    return sorted(session_dir.glob("turn_*.json"))
+
+
 def main() -> None:
     st.set_page_config(page_title="DMAI Graph Viewer", layout="wide")
 
     st.title("Session State Viewer")
-    path_str = st.text_input("Snapshot path", "state_snapshot.json")
-    st.button("Refresh")
+    session_dir_str = st.text_input("Session folder", "state")
+    session_dir = Path(session_dir_str)
+    turn_files = list_turn_files(session_dir)
+    turn_labels = [p.name for p in turn_files]
+    selected = None
+    if turn_labels:
+        selected = st.selectbox("Select turn file", turn_labels, index=len(turn_labels) - 1)
+    refresh = st.button("Refresh")
 
-    snapshot = load_snapshot(Path(path_str))
+    if not turn_files or not selected:
+        st.info("No turn files found yet.")
+        return
+
+    snapshot = load_snapshot(session_dir / selected)
     if not snapshot:
-        st.stop()
+        return
 
     cols = st.columns(3)
     beat = snapshot.get("beat_state") or {}
