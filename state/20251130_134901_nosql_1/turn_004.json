@@ -1,63 +1,82 @@
 {
+  "turn": 4,
   "beat_state": {
-    "current_index": 1,
-    "current": "Surface a hint about the locked upstairs room.",
-    "next": "Discover the hidden scrap with the combination clue."
+    "current_index": 2,
+    "current": "Let the player freely investigate houses and locations around town to gather clues about the bloodstains, memory gaps, and the reclusive town wizard.",
+    "next": "Reveal the true pattern: Mitch is the killer, and the town wizard secretly resurrects his victims each night and wipes their memories."
   },
   "active_keys": [
-    "Bar Counter",
-    "Brin",
-    "Copper Cup",
-    "Edda",
-    "Hidden Scrap",
-    "Lysa",
-    "Mara",
-    "Stair Landing",
-    "Storeroom Door",
-    "Thom"
+    "Deckhand Finn",
+    "Dockmaster Hara",
+    "Docks",
+    "Fishermen's Shacks",
+    "Frayed Mooring Rope",
+    "Harbor Gate",
+    "Warehouse Row"
   ],
   "focus": [
-    "Copper Cup",
-    "Mara"
+    "Docks",
+    "Deckhand Finn",
+    "Dockmaster Hara"
   ],
   "discovered_keys": [
     "Bar Counter",
     "Brin",
     "Copper Cup",
+    "Deckhand Finn",
+    "Dockmaster Hara",
+    "Docks",
     "Edda",
     "Harbor Gate",
     "Lysa",
     "Mara",
     "Market Stalls",
+    "Mitch",
     "Stair Landing",
     "Temple of the Tide",
     "Thom",
     "Town Hall",
     "Town Square"
   ],
-  "session_summary": "Player: I walk up to the bar and talk to Mara, \"Tell me about the town.\"\nRecap: You uncover a hidden scrap with a combination clue\u2014\u201c12\u20113\u20119\u201d\u2014that hints at unlocking the storeroom door.\nPlayer: Okay now I want to leave the bar and walk out to the town square. What do I see around me?\nRecap: You step into the town square, noting Mara\u2019s hidden scrap that reveals the code 0415 for the upstairs lock.",
+  "session_summary": "Player: Bloodstains? Do I see any around?\nRecap: Mitch has begged you to investigate the bloodstains that litter the town square.\nPlayer: I say to Mitch, \"When did these bloodstains start appearing? Is nobody concerned about them?\"\nRecap: Mitch tells you the bloodstains began a week ago, spread across town, and asks you to find their source.\nPlayer: Okay I want to leave Mitch and go to the Docks.\nRecap: You\u2019re at the docks, ready to investigate further.\nPlayer: I look around the docks what do I see?\nRecap: You\u2019re at the docks, ready to investigate the bloodstains and the mysterious memory gaps.",
   "history": [
     {
       "role": "player",
-      "content": "I walk up to the bar and talk to Mara, \"Tell me about the town.\""
+      "content": "Bloodstains? Do I see any around?"
     },
     {
       "role": "narrator",
-      "content": "Thoughts: The player has already learned about the locked upstairs room. Now we need to show them discovering the hidden scrap with the combination clue. This should feel like a small investigative moment, maybe noticing a loose bar stool or a hidden compartment behind a painting. We need to keep the narration immersive and in the tavern setting. The scrap will give a numeric or symbolic clue that will later be used to open the storeroom door. We'll keep the focus on the tavern, Mara, and the bar area. We can foreshadow that the combination will unlock the storeroom, but not reveal too much. The narrative should be in second person. We'll end with a brief recap.Narrative: \n\nYou lean in, the wooden counter slick with the day's grime, and notice a faint seam where the back wall of the bar meets the floorboards. Mara, wiping a mug, turns her head, her eyes catching your curious glance. \"What are you looking for?\" she asks, her voice low as the clink of ale glasses. \n\nYou explain that the upstairs room has been locked for weeks and that you\u2019re hoping to learn more. She pauses, then gestures toward a small panel beneath the bar\u2019s back rail. \"The last keeper of that place left a scrap tucked away,\" she says, sliding a loose plank aside. The panel opens to reveal a narrow cavity, its light a muted amber from a single candle. Inside, wrapped in a faded piece of canvas, lies a scrap of parchment, its edges curled from age. You pull it out, and the paper feels oddly warm under your fingers, as if it has been kept close to a fire. \n\nYou unfold it, and the ink is a deep blue, like the sea at dusk. The words are simple, almost cryptic: \n\n> *\"Where the tide turns, the lock will fall: 12\u20113\u20119.\"* \n\nThe numbers sit in a small square, their spacing deliberate, as if a combination lock will accept them. You note the phrase\u2014\"where the tide turns\"\u2014and wonder if it refers to the town\u2019s harbor or a particular point in the tavern itself. Either way, the scrap seems to be the key you need. \n\nYou tuck the parchment back into the cavity, feeling the weight of its promise. Mara nods, as if she knew the next step was inevitable. The tavern hums around you, the clatter of mugs and the distant laughter of patrons. It\u2019s clear the next move is to try the numbers on the storeroom door, but for now, the secret is yours to hold. \n\nRecap: You uncover a hidden scrap with a combination clue\u2014\u201c12\u20113\u20119\u201d\u2014that hints at unlocking the storeroom door. \n\nFocus: Copper Cup, Mara\nRecap: You uncover a hidden scrap with a combination clue\u2014\u201c12\u20113\u20119\u201d\u2014that hints at unlocking the storeroom door."
+      "content": "Mitch steps forward from the edge of the square, his broad shoulders hunched and his eyes darting nervously between the lanterns and the crowd. He leans close enough that you can hear his breath in the cool dusk air.\n> **Mitch**: \u201cYou\u2014yes, you. I need you to look at those stains. I see them all around, even in the cobbles. No one\u2019s missing, but the blood\u2026 it\u2019s everywhere. Please, investigate.\u201d\nThe square is dimly lit by flickering lanterns, and a few townsfolk pause mid\u2011conversation to stare at the sudden outburst. A faint smear of dark red is visible on the stone near the fountain, barely visible against the weathered surface.\nWhat do you do?\n1. **Ask Mitch for more details about the stains.**\n2. **Step closer to examine the visible bloodstain.**\n3. **Ignore Mitch and keep walking.**\nRecap: Mitch has begged you to investigate the bloodstains that litter the town square."
     },
     {
       "role": "player",
-      "content": "Okay now I want to leave the bar and walk out to the town square. What do I see around me?"
+      "content": "I say to Mitch, \"When did these bloodstains start appearing? Is nobody concerned about them?\""
     },
     {
       "role": "narrator",
-      "content": "You push the heavy oak door of the Copper Cup inward, its hinges sighing as the night air rushes in. The scent of stew, sea\u2011salt, and woodsmoke lingers, mingling with the faint clatter of the harbor beyond. Lanterns swing gently from iron hooks, casting amber pools across the cobblestones. Ahead, the square spreads out: to the north, the stone fa\u00e7ade of the Temple of the Tide looms, its silver bell chiming once more; to the east, the town hall\u2019s granite windows reflect the glow; in the center, a modest fountain bubbles quietly, its water catching the light. Merchants set up their stalls, their voices rising in a low hum of gossip and trade. A lone guard in a dark cloak watches the rope\u2011bound stairwell that leads to the tavern\u2019s upper rooms, his eyes flicking between the tavern and the road.\n\nAs you step onto the square, a memory nudges at you. Mara had slipped a scrap of parchment behind a loose plank in the bar\u2019s back wall, whispering, \u201cupstairs lock is our wedding anniversary date.\u201d The note, its ink faded but legible, simply reads: *\u201cUPSTAIRS LOCK IS OUR WEDDING ANNIVERSARY DATE \u2013 04/15.\u201d* The date is written in the same neat, four\u2011digit code you\u2019ll need to try on the storeroom door later. The scrap\u2019s presence feels like a quiet promise, a key waiting to be turned.\nRecap: You step into the town square, noting Mara\u2019s hidden scrap that reveals the code 0415 for the upstairs lock."
+      "content": "Mitch\u2019s shoulders tremble as he leans closer, the faint glow of lanterns catching the dark sheen of his eyes. \u201cIt started a week ago,\u201d he whispers, voice barely above a rustle of leaves. \u201cFirst one by the fountain, then at the old well, and now\u2014every cobblestone, every door frame. People say it\u2019s a spill, a stray animal, but the blood\u2019s too deep, too fresh. And the nights\u2026 they\u2019re broken. Some wake up with a pounding in their head and no memory of the night before.\u201d He swallows, then looks at you with a pleading intensity. \u201cI\u2019m just a lumberjack. I don\u2019t know what\u2019s happening, but I can\u2019t stand by. If you can find the source, maybe we can stop it.\u201d\n\nYou can:\n1. **Ask Mitch which specific locations have the most recent stains.**\n2. **Suggest investigating the old well, since it\u2019s mentioned as a spot.**\n3. **Inquire if anyone has reported seeing the wizard near the stains.**\n4. **Tell Mitch you\u2019ll need more time to think before you commit.**\nRecap: Mitch tells you the bloodstains began a week ago, spread across town, and asks you to find their source."
+    },
+    {
+      "role": "player",
+      "content": "Okay I want to leave Mitch and go to the Docks."
+    },
+    {
+      "role": "narrator",
+      "content": "Describe the docks, the smell, the sounds, the view. Then present the choices.\nRecap: You\u2019re at the docks, ready to investigate further."
+    },
+    {
+      "role": "player",
+      "content": "I look around the docks what do I see?"
+    },
+    {
+      "role": "narrator",
+      "content": "The dock stretches out like a long, ragged ribbon of weathered planks and iron ties, the water lapping against the wooden beams with a steady, salty sigh. A thin mist rises from the harbor, carrying the briny tang of seaweed and the sharp sting of fresh tar. Above, gulls wheel in the dusk sky, their cries echoing off the stone walls of the harbor gate and the low roofs of the fishermen\u2019s shacks. The air is heavy with the scent of oil and the faint, sweet perfume of fresh fish that have just been hauled in. Lanterns hanging from the dock posts flicker on, throwing warm pools of light across the uneven surface, revealing the dark stains that have begun to seep into the wood and stone.\n\nYou notice a length of mooring rope that hangs slack near the far end of the pier, its fibers tinged a darker shade than the rest of the rope\u2014almost as if something had cut or stained it. A few fishermen are huddled in their shacks, their lanterns casting soft glows through cracked windows, while a lone deckhand with rope\u2011burned hands\u2014Deckhand Finn\u2014leans against a post, his eyes darting between the water and the shore.\n\nIn the distance, the stone arch of the harbor gate looms, its guard posts watching the flow of carts and sailors. The line of squat stone warehouses to the west of the docks is visible, their heavy doors and barred windows hinting at hidden cargo.\n\nWhat would you like to do?\n\n1. **Inspect the frayed mooring rope** \u2013 see if the stain on it matches the blood on the cobbles.\n2. **Approach Deckhand Finn** \u2013 ask him if he\u2019s noticed anything unusual or heard rumors.\n3. **Walk over to the Fishermen\u2019s Shacks** \u2013 look for any signs of blood or disturbances.\n4. **Check the harbor gate** \u2013 see if anyone has seen any odd activity there.\n5. **Search for Dockmaster Hara** \u2013 she might have information on missing cargo or strange shipments.\n6. **Ask around about memory gaps** \u2013 see if anyone notices odd forgetfulness that could point to wizardly influence.\n\nChoose one of the options above, or suggest something else.\nRecap: You\u2019re at the docks, ready to investigate the bloodstains and the mysterious memory gaps."
     }
   ],
   "nodes": [
     {
       "key": "Town Square",
-      "description": "The cobbled heart of the harbor town. Lanterns hang from iron posts, a weathered fountain burbles at the center, and every major street spills into this crowded crossroads of stalls, shouting vendors, and passing sailors.",
+      "description": "The cobbled heart of the harbor town. Lanterns hang from iron posts, a weathered fountain burbles at the center, and every major street spills into this crossroads of exhausted townsfolk, shouting vendors, and passing sailors. Talk of bloodstains and lost sleep hangs under every conversation.",
       "connections": [
         "Market Stalls",
         "Temple of the Tide",
@@ -70,7 +89,9 @@
         "Copper Cup",
         "Town Crier Jessa",
         "Street Performer Jorin",
-        "Bronze Fountain Coin"
+        "Bronze Fountain Coin",
+        "Mitch",
+        "Wizard's House"
       ],
       "flags": {
         "active": false,
@@ -92,7 +113,7 @@
     },
     {
       "key": "Town Crier Jessa",
-      "description": "Jessa stands atop a low crate in the square, ringing a handbell as she calls out news of incoming ships, missing persons, and the mayor's latest decrees.",
+      "description": "Jessa stands atop a low crate in the square, ringing a handbell as she calls out news of incoming ships, unexplained bloodstains, and the mayor's increasingly desperate decrees.",
       "connections": [
         "Town Square",
         "Town Hall"
@@ -160,7 +181,7 @@
     },
     {
       "key": "Temple of the Tide",
-      "description": "A modest stone temple overlooking the square, its doors carved with waves and storm-clouds. Inside, candles flicker before a statue of a calm, watchful sea goddess.",
+      "description": "A modest stone temple overlooking the square, its doors carved with waves and storm-clouds. Inside, candles flicker before a statue of a calm, watchful sea goddess. Many townsfolk come here seeking answers for the nights they cannot remember.",
       "connections": [
         "Town Square",
         "Cleric Serah",
@@ -176,7 +197,7 @@
     },
     {
       "key": "Cleric Serah",
-      "description": "Serah, a middle-aged cleric of the sea goddess, tends to sailors and townsfolk alike. She listens more than she speaks and keeps a careful eye on omens from the harbor.",
+      "description": "Serah, a middle-aged cleric of the sea goddess, tends to sailors and townsfolk alike. She listens more than she speaks and keeps a careful eye on omens from the harbor\u2014and on the strange emptiness in the eyes of those who wake up with blood on their doorsteps.",
       "connections": [
         "Temple of the Tide",
         "Old Well",
@@ -218,7 +239,7 @@
     },
     {
       "key": "Town Hall",
-      "description": "A tall, timber-framed hall with a slate roof and creaking signboard. Notices are nailed to a board outside, and a pair of clerks shuffle papers just inside the main doors.",
+      "description": "A tall, timber-framed hall with a slate roof and creaking signboard. Notices are nailed to a board outside, and a pair of clerks shuffle papers just inside the main doors. The notice board is cluttered with reports of nocturnal disturbances and 'unsettling stains' found in private homes.",
       "connections": [
         "Town Square",
         "Mayor Elric",
@@ -233,11 +254,40 @@
       }
     },
     {
+      "key": "Mitch",
+      "description": "Mitch is a broad-shouldered lumberjack with calloused hands and haunted eyes. He insists he just wants someone to uncover the truth behind the bloodstains, but his agitation cuts a little too deep.",
+      "connections": [
+        "Town Square",
+        "Lumberyard",
+        "Mayor Elric"
+      ],
+      "flags": {
+        "active": false,
+        "focus": false,
+        "discovered": true
+      }
+    },
+    {
+      "key": "Lumberyard",
+      "description": "Stacks of freshly cut logs and the tang of sap fill the air. A small shack nearby shows scuffed floorboards and a corner where someone scrubbed at dried, dark stains.",
+      "connections": [
+        "Mitch",
+        "Riverside Path"
+      ],
+      "flags": {
+        "active": false,
+        "focus": false,
+        "discovered": false
+      }
+    },
+    {
       "key": "Mayor Elric",
-      "description": "Mayor Elric is a tired man in a well-kept coat, juggling merchants' demands and dockside disputes. He values order and appearances, and he worries about anything that might scare off trade.",
+      "description": "Mayor Elric is a tired man in a well-kept coat, juggling merchants' demands and the growing panic over unexplained bloodstains. No one has truly gone missing, but he fears the town is fraying and doesn't know how much longer he can pretend things are under control.",
       "connections": [
         "Town Hall",
-        "Town Square"
+        "Town Square",
+        "Mitch",
+        "Town Wizard Arlen"
       ],
       "flags": {
         "active": false,
@@ -285,7 +335,7 @@
         "Cracked Spyglass"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": true
       }
@@ -330,22 +380,22 @@
         "Frayed Mooring Rope"
       ],
       "flags": {
-        "active": false,
-        "focus": false,
-        "discovered": false
+        "active": true,
+        "focus": true,
+        "discovered": true
       }
     },
     {
       "key": "Dockmaster Hara",
-      "description": "Hara keeps a ledger tucked under one arm as she strides up and down the docks. She knows which ships arrived late, which cargo went missing, and which captains owe favors.",
+      "description": "Hara keeps a ledger tucked under one arm as she strides up and down the docks. She knows which ships arrived late, which cargo went missing, and which captains owe favors. She is quietly furious about the unexplained stains turning up near her warehouses.",
       "connections": [
         "Docks",
         "Warehouse Row"
       ],
       "flags": {
-        "active": false,
-        "focus": false,
-        "discovered": false
+        "active": true,
+        "focus": true,
+        "discovered": true
       }
     },
     {
@@ -357,9 +407,9 @@
         "Frayed Mooring Rope"
       ],
       "flags": {
-        "active": false,
-        "focus": false,
-        "discovered": false
+        "active": true,
+        "focus": true,
+        "discovered": true
       }
     },
     {
@@ -370,14 +420,14 @@
         "Deckhand Finn"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": false
       }
     },
     {
       "key": "Warehouse Row",
-      "description": "A line of squat stone warehouses hugs the waterfront. Their heavy doors and barred windows suggest both valuable cargo and things better kept out of sight.",
+      "description": "A line of squat stone warehouses hugs the waterfront. Their heavy doors and barred windows suggest both valuable cargo and things better kept out of sight. One doorframe bears a faded, rusty smear that no one can quite explain.",
       "connections": [
         "Docks",
         "Smuggler's Entrance",
@@ -385,7 +435,7 @@
         "Smugglers' Ledger"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": false
       }
@@ -449,7 +499,7 @@
     },
     {
       "key": "Old Well",
-      "description": "An old stone well at the edge of the square, its rope replaced more than once. Locals say its water never runs dry, and that it connects to forgotten tunnels beneath the town.",
+      "description": "An old stone well at the edge of the square, its rope replaced more than once. Locals say its water never runs dry, and that it connects to forgotten tunnels beneath the town. Faint rust-brown stains cling to some of the stones as though someone once washed something away here.",
       "connections": [
         "Town Square",
         "Smuggler's Entrance",
@@ -465,7 +515,7 @@
     },
     {
       "key": "Old Tellan",
-      "description": "Tellan sits on the well's rim spinning stories for anyone who will listen. Some tales are harmless gossip, others hint at things buried under the town and better left alone.",
+      "description": "Tellan sits on the well's rim spinning stories for anyone who will listen. Some tales are harmless gossip, others hint at things buried under the town and better left alone. Lately his stories keep circling back to nights no one quite remembers.",
       "connections": [
         "Old Well",
         "Town Square"
@@ -522,7 +572,7 @@
     },
     {
       "key": "East Alley",
-      "description": "A narrow, shadowed alley slipping between tall buildings. Laundry lines crisscross overhead, and the back doors of several shops and taverns open onto it.",
+      "description": "A narrow, shadowed alley slipping between tall buildings. Laundry lines crisscross overhead, and the back doors of several shops and taverns open onto it. Here and there, someone has scrubbed at dark stains that refuse to fully fade from the cobbles.",
       "connections": [
         "Town Square",
         "Back Door - Copper Cup",
@@ -579,7 +629,7 @@
     },
     {
       "key": "Back Door - Copper Cup",
-      "description": "A plain wooden door at the rear of the Copper Cup, used by staff and late-night regulars. Crates and empty barrels stack nearby, and the smell of stew drifts out when it opens.",
+      "description": "A plain wooden door at the rear of the Copper Cup, used by staff and late-night regulars. Crates and empty barrels stack nearby, and the smell of stew drifts out when it opens. A faint dark streak runs along one stone, as if something was once dragged past in a hurry.",
       "connections": [
         "East Alley",
         "Copper Cup",
@@ -649,7 +699,7 @@
     },
     {
       "key": "South Bridge",
-      "description": "A low stone bridge arching over a narrow river that feeds the harbor. Lanterns line the parapet, and you can see both the town walls and the distant open sea from its center.",
+      "description": "A low stone bridge arching over a narrow river that feeds the harbor. Lanterns line the parapet, and you can see both the town walls and the distant open sea from its center. More than one passerby has reported waking here with aching feet and no memory of how they arrived.",
       "connections": [
         "Town Square",
         "Riverside Path",
@@ -703,7 +753,7 @@
     },
     {
       "key": "Fishermen's Shacks",
-      "description": "A cluster of small wooden shacks perched on pilings above the river. Nets hang to dry, and lantern-light spills from half-open doors late into the night.",
+      "description": "A cluster of small wooden shacks perched on pilings above the river. Nets hang to dry, and lantern-light spills from half-open doors late into the night. In more than one doorway, dark stains mar the floorboards with no memory of how they appeared.",
       "connections": [
         "Riverside Path",
         "Docks",
@@ -711,7 +761,7 @@
         "Fisher Mira"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": false
       }
@@ -731,10 +781,37 @@
     },
     {
       "key": "Fisher Mira",
-      "description": "Mira cleans fish with quick, practiced motions, humming an old sea-song under her breath. She keeps an eye on the river for signs of storms or trouble.",
+      "description": "Mira cleans fish with quick, practiced motions, humming an old sea-song under her breath. She keeps an eye on the river for signs of storms or trouble, and she is one of the few who admits she sometimes wakes up with her boots wet and no memory of why.",
       "connections": [
         "Fishermen's Shacks",
         "Riverside Path"
+      ],
+      "flags": {
+        "active": false,
+        "focus": false,
+        "discovered": false
+      }
+    },
+    {
+      "key": "Wizard's House",
+      "description": "A tall stone house with shuttered windows and a heavy iron fence, set just off the square. Lanterns burn late behind the curtains, and a pair of hired guards discourage casual callers.",
+      "connections": [
+        "Town Square",
+        "Town Wizard Arlen",
+        "Watch Barracks"
+      ],
+      "flags": {
+        "active": false,
+        "focus": false,
+        "discovered": false
+      }
+    },
+    {
+      "key": "Town Wizard Arlen",
+      "description": "Arlen is a reclusive wizard who seldom leaves his guarded home. Whispers say he can pluck souls back from the brink and smooth away memories like ink from parchment.",
+      "connections": [
+        "Wizard's House",
+        "Mayor Elric"
       ],
       "flags": {
         "active": false,
@@ -755,8 +832,8 @@
         "Stair Landing"
       ],
       "flags": {
-        "active": true,
-        "focus": true,
+        "active": false,
+        "focus": false,
         "discovered": true
       }
     },
@@ -769,7 +846,7 @@
         "Copper Cup"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": true
       }
@@ -784,8 +861,8 @@
         "Brin"
       ],
       "flags": {
-        "active": true,
-        "focus": true,
+        "active": false,
+        "focus": false,
         "discovered": true
       }
     },
@@ -799,7 +876,7 @@
         "Mara"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": true
       }
@@ -813,7 +890,7 @@
         "Storeroom Door"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": true
       }
@@ -827,7 +904,7 @@
         "Storeroom Door"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": true
       }
@@ -841,7 +918,7 @@
         "Storeroom Door"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": true
       }
@@ -856,7 +933,7 @@
         "Brin"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": false
       }
@@ -870,7 +947,7 @@
         "Storeroom Door"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": true
       }
@@ -884,7 +961,7 @@
         "Stair Landing"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": false
       }
@@ -938,6 +1015,14 @@
     {
       "src": "Town Square",
       "dst": "Bronze Fountain Coin"
+    },
+    {
+      "src": "Town Square",
+      "dst": "Mitch"
+    },
+    {
+      "src": "Town Square",
+      "dst": "Wizard's House"
     },
     {
       "src": "Town Crier Jessa",
@@ -1020,8 +1105,24 @@
       "dst": "Weathered Notice"
     },
     {
+      "src": "Mitch",
+      "dst": "Lumberyard"
+    },
+    {
+      "src": "Mitch",
+      "dst": "Mayor Elric"
+    },
+    {
+      "src": "Lumberyard",
+      "dst": "Riverside Path"
+    },
+    {
       "src": "Mayor Elric",
       "dst": "Town Square"
+    },
+    {
+      "src": "Mayor Elric",
+      "dst": "Town Wizard Arlen"
     },
     {
       "src": "Scribe Loth",
@@ -1282,6 +1383,14 @@
     {
       "src": "Fisher Mira",
       "dst": "Riverside Path"
+    },
+    {
+      "src": "Wizard's House",
+      "dst": "Town Wizard Arlen"
+    },
+    {
+      "src": "Wizard's House",
+      "dst": "Watch Barracks"
     },
     {
       "src": "Copper Cup",

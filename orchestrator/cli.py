@@ -13,11 +13,6 @@ from .story import STARTING_STATE
 def main() -> None:
     parser = argparse.ArgumentParser(description="Story exploration demo.")
     parser.add_argument("--model", help="Ollama model id", default="gpt-oss:20b")
-    parser.add_argument("--campaign-key", help="Load story nodes/beats from Postgres story.* schema")
-    parser.add_argument(
-        "--pg-dsn",
-        help="Postgres DSN for campaign lookup (defaults to PG_DSN env or local docker-compose value)",
-    )
     parser.add_argument(
         "--start-key",
         dest="start_keys",
@@ -42,8 +37,6 @@ def main() -> None:
     orchestrator = Orchestrator(
         model=args.model,
         verbose=args.verbose,
-        campaign_key=args.campaign_key,
-        pg_dsn=args.pg_dsn,
         initial_keys=args.start_keys,
         starting_state=args.starting_state or STARTING_STATE,
     )
@@ -59,8 +52,6 @@ def main() -> None:
     try:
         intro = orchestrator.generate_intro()
         print(f"\n{intro['ic']}\n")
-        if intro.get("recap"):
-            print(f"[Recap] {intro['recap']}\n")
     except Exception:
         # Fall back to plain starting state if intro generation fails
         print(f"\n[Intro] {orchestrator.starting_state}\n")
@@ -86,8 +77,6 @@ def main() -> None:
         turn = orchestrator.run_turn(player_line)
         narration = turn["narration"]
         print(f"\n{narration['ic']}\n")
-        if narration.get("recap"):
-            print(f"[Recap] {narration['recap']}\n")
         unlocked = turn.get("unlocked_keys") or []
         if unlocked:
             print("[New Keys] " + ", ".join(unlocked))
@@ -115,10 +104,20 @@ def main() -> None:
             discovered = turn.get("discovered_keys") or []
             if discovered:
                 print(f"[Discovered] {', '.join(discovered)}")
+            if narration.get("recap"):
+                print(f"[Recap] {narration['recap']}")
             summary = turn.get("session_summary")
             if summary:
                 print("[Summary]")
                 print(summary)
+            debug = turn.get("llm_debug") or {}
+            if debug:
+                print("[LLM Debug]")
+                for step, data in debug.items():
+                    print(f"  [{step}] prompt:")
+                    print(data.get("prompt", ""))
+                    print(f"  [{step}] raw:")
+                    print(data.get("raw", ""))
 
         if session_dir:
             try:
