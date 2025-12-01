@@ -1,24 +1,27 @@
 {
+  "turn": 0,
   "beat_state": {
-    "current_index": 1,
-    "current": "Surface a hint about the locked upstairs room.",
-    "next": "Discover the hidden scrap with the combination clue."
+    "current_index": 0,
+    "current": "Set the tavern mood and introduce at least one patron.",
+    "next": "Surface a hint about the locked upstairs room."
   },
   "active_keys": [
-    "Bar Counter",
-    "Brin",
+    "Bronze Fountain Coin",
     "Copper Cup",
-    "Edda",
-    "Hidden Scrap",
-    "Lysa",
-    "Mara",
-    "Stair Landing",
-    "Storeroom Door",
-    "Thom"
+    "East Alley",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "South Bridge",
+    "Street Performer Jorin",
+    "Temple of the Tide",
+    "Town Crier Jessa",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks"
   ],
   "focus": [
-    "Copper Cup",
-    "Mara"
+    "Town Square"
   ],
   "discovered_keys": [
     "Bar Counter",
@@ -35,25 +38,8 @@
     "Town Hall",
     "Town Square"
   ],
-  "session_summary": "Player: I walk up to the bar and talk to Mara, \"Tell me about the town.\"\nRecap: You uncover a hidden scrap with a combination clue\u2014\u201c12\u20113\u20119\u201d\u2014that hints at unlocking the storeroom door.\nPlayer: Okay now I want to leave the bar and walk out to the town square. What do I see around me?\nRecap: You step into the town square, noting Mara\u2019s hidden scrap that reveals the code 0415 for the upstairs lock.",
-  "history": [
-    {
-      "role": "player",
-      "content": "I walk up to the bar and talk to Mara, \"Tell me about the town.\""
-    },
-    {
-      "role": "narrator",
-      "content": "Thoughts: The player has already learned about the locked upstairs room. Now we need to show them discovering the hidden scrap with the combination clue. This should feel like a small investigative moment, maybe noticing a loose bar stool or a hidden compartment behind a painting. We need to keep the narration immersive and in the tavern setting. The scrap will give a numeric or symbolic clue that will later be used to open the storeroom door. We'll keep the focus on the tavern, Mara, and the bar area. We can foreshadow that the combination will unlock the storeroom, but not reveal too much. The narrative should be in second person. We'll end with a brief recap.Narrative: \n\nYou lean in, the wooden counter slick with the day's grime, and notice a faint seam where the back wall of the bar meets the floorboards. Mara, wiping a mug, turns her head, her eyes catching your curious glance. \"What are you looking for?\" she asks, her voice low as the clink of ale glasses. \n\nYou explain that the upstairs room has been locked for weeks and that you\u2019re hoping to learn more. She pauses, then gestures toward a small panel beneath the bar\u2019s back rail. \"The last keeper of that place left a scrap tucked away,\" she says, sliding a loose plank aside. The panel opens to reveal a narrow cavity, its light a muted amber from a single candle. Inside, wrapped in a faded piece of canvas, lies a scrap of parchment, its edges curled from age. You pull it out, and the paper feels oddly warm under your fingers, as if it has been kept close to a fire. \n\nYou unfold it, and the ink is a deep blue, like the sea at dusk. The words are simple, almost cryptic: \n\n> *\"Where the tide turns, the lock will fall: 12\u20113\u20119.\"* \n\nThe numbers sit in a small square, their spacing deliberate, as if a combination lock will accept them. You note the phrase\u2014\"where the tide turns\"\u2014and wonder if it refers to the town\u2019s harbor or a particular point in the tavern itself. Either way, the scrap seems to be the key you need. \n\nYou tuck the parchment back into the cavity, feeling the weight of its promise. Mara nods, as if she knew the next step was inevitable. The tavern hums around you, the clatter of mugs and the distant laughter of patrons. It\u2019s clear the next move is to try the numbers on the storeroom door, but for now, the secret is yours to hold. \n\nRecap: You uncover a hidden scrap with a combination clue\u2014\u201c12\u20113\u20119\u201d\u2014that hints at unlocking the storeroom door. \n\nFocus: Copper Cup, Mara\nRecap: You uncover a hidden scrap with a combination clue\u2014\u201c12\u20113\u20119\u201d\u2014that hints at unlocking the storeroom door."
-    },
-    {
-      "role": "player",
-      "content": "Okay now I want to leave the bar and walk out to the town square. What do I see around me?"
-    },
-    {
-      "role": "narrator",
-      "content": "You push the heavy oak door of the Copper Cup inward, its hinges sighing as the night air rushes in. The scent of stew, sea\u2011salt, and woodsmoke lingers, mingling with the faint clatter of the harbor beyond. Lanterns swing gently from iron hooks, casting amber pools across the cobblestones. Ahead, the square spreads out: to the north, the stone fa\u00e7ade of the Temple of the Tide looms, its silver bell chiming once more; to the east, the town hall\u2019s granite windows reflect the glow; in the center, a modest fountain bubbles quietly, its water catching the light. Merchants set up their stalls, their voices rising in a low hum of gossip and trade. A lone guard in a dark cloak watches the rope\u2011bound stairwell that leads to the tavern\u2019s upper rooms, his eyes flicking between the tavern and the road.\n\nAs you step onto the square, a memory nudges at you. Mara had slipped a scrap of parchment behind a loose plank in the bar\u2019s back wall, whispering, \u201cupstairs lock is our wedding anniversary date.\u201d The note, its ink faded but legible, simply reads: *\u201cUPSTAIRS LOCK IS OUR WEDDING ANNIVERSARY DATE \u2013 04/15.\u201d* The date is written in the same neat, four\u2011digit code you\u2019ll need to try on the storeroom door later. The scrap\u2019s presence feels like a quiet promise, a key waiting to be turned.\nRecap: You step into the town square, noting Mara\u2019s hidden scrap that reveals the code 0415 for the upstairs lock."
-    }
-  ],
+  "session_summary": "",
+  "history": [],
   "nodes": [
     {
       "key": "Town Square",
@@ -73,8 +59,8 @@
         "Bronze Fountain Coin"
       ],
       "flags": {
-        "active": false,
-        "focus": false,
+        "active": true,
+        "focus": true,
         "discovered": true
       }
     },
@@ -85,7 +71,7 @@
         "Town Square"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": false
       }
@@ -98,7 +84,7 @@
         "Town Hall"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": false
       }
@@ -111,7 +97,7 @@
         "Market Stalls"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": false
       }
@@ -127,7 +113,7 @@
         "Spice Seller Nima"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": true
       }
@@ -169,7 +155,7 @@
         "Salt-Stained Prayer Beads"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": true
       }
@@ -227,7 +213,7 @@
         "Weathered Notice"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": true
       }
@@ -285,7 +271,7 @@
         "Cracked Spyglass"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": true
       }
@@ -458,7 +444,7 @@
         "Old Tellan"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": false
       }
@@ -487,7 +473,7 @@
         "Guard's Lost Signet"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": false
       }
@@ -532,7 +518,7 @@
         "Hidden Alley Knife"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": false
       }
@@ -656,7 +642,7 @@
         "Bridge Watcher Sol"
       ],
       "flags": {
-        "active": false,
+        "active": true,
         "focus": false,
         "discovered": false
       }
@@ -756,7 +742,7 @@
       ],
       "flags": {
         "active": true,
-        "focus": true,
+        "focus": false,
         "discovered": true
       }
     },
@@ -769,7 +755,7 @@
         "Copper Cup"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": true
       }
@@ -784,8 +770,8 @@
         "Brin"
       ],
       "flags": {
-        "active": true,
-        "focus": true,
+        "active": false,
+        "focus": false,
         "discovered": true
       }
     },
@@ -799,7 +785,7 @@
         "Mara"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": true
       }
@@ -813,7 +799,7 @@
         "Storeroom Door"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": true
       }
@@ -827,7 +813,7 @@
         "Storeroom Door"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": true
       }
@@ -841,7 +827,7 @@
         "Storeroom Door"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": true
       }
@@ -856,7 +842,7 @@
         "Brin"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": false
       }
@@ -870,7 +856,7 @@
         "Storeroom Door"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": true
       }
@@ -884,7 +870,7 @@
         "Stair Landing"
       ],
       "flags": {
-        "active": true,
+        "active": false,
         "focus": false,
         "discovered": false
       }

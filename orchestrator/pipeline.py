@@ -1,26 +1,26 @@
 from __future__ import annotations
 
 import logging
+import re
 import textwrap
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional, Sequence
+from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence
 
-from .adapter import LLMAdapter
+from .adapter import LLMAdapter, LLMError
 from .history import History
 from .story import BEAT_LIST, STARTING_STATE, StoryGraph
-from .story_data import PostgresStorySource
 
 
 logger = logging.getLogger(__name__)
 
 
 PLAN_PROMPT = """You are planning the next response in an interactive narrative.
-Use the provided story nodes, their connections, and the conversation so far.
+Use the provided story nodes, their connections, and the conversation so far. Respect the player's input, they drive the story forward.
 
 Instructions:
-- Think step-by-step about the most grounded next move (write under Thoughts).
-- The player must drive all agency and change in the story. Do not take actions for them.
-- Work within the current beat; do not jump ahead unless the player pushes time forward or explicitly completes the beat.
+- Think step-by-step about the most grounded reply (write under Thoughts).
+- The player must drive all agency and change in the story. Do not take or suggest actions for them.
+- Use the current beat as a loose guide; allow the player to diverge if they choose to.
 - Capture the actionable plan in 1-3 sentences (write under Plan).
 - Do not narrate yet; this is just preparation. 
 
@@ -35,8 +35,9 @@ Examine the proposed plan, story nodes, and conversation.
 Instructions:
 - Ensure the plan respects the known story information (locks need codes, etc.).
 - Confirm it makes sense chronologically and logically.
+- Ensure the plan respects the player's input and agency above all else.
+- The player must drive all agency and change in the story. Do not take or suggest actions for them.
 - Approve only if no conflicts; otherwise request revision.
-- Decide if the current beat has been meaningfully fulfilled; set Advance to yes only when the player’s actions/time justify moving to the next beat.
 
 Format exactly:
 Thoughts: <analysis>
@@ -50,26 +51,51 @@ Use the story nodes, the approved plan, and the validator notes.
 
 Instructions:
 - Think privately before writing (Thoughts).
-- Produce immersive second-person narration (Narrative) and a one-sentence recap (Recap).
-- If additional nodes are needed, add 'Lookup: key one, key two'. Only request connected keys.
-- Stay within the current beat unless the validator advanced to the next one; you may foreshadow the next beat lightly.
-- Set 'Focus: key one, key two' to indicate the primary location/subjects the DM should keep active next turn.
+- Produce immersive second-person narration (Narrative). Keep it to prose/dialogue only—no numbered or bulleted options, no menus of actions.
+- Do not include any explicit choices. The player will describe their own actions.
+- Respect the player's agency. Never take actions for them.
+- The player must drive all agency and change in the story. Do not take or suggest any actions for them.
 
 Format exactly:
 Thoughts: <hidden reasoning>
 Narrative: <story prose>
-Recap: <summary>
-[Optional] Lookup: key one, key two
-[Optional] Focus: key one, key two
+"""
+
+STATUS_PROMPT = """You are the story state keeper.
+
+Instructions:
+- Summarize the current in-world situation in 2-3 sentences, grounded in the story nodes, beats, and recent conversation.
+- Emphasize the player's current location/focus and any immediate tensions or open threads.
+- Do NOT offer choices or directives; just describe state.
+- The player must drive all agency and change in the story. Do not take or suggest actions for them.
+
+Format exactly:
+Status: <concise state>
+"""
+
+INTENT_PROMPT = """You extract the player's intent.
+
+Instructions:
+- Identify the action (move, talk, inspect, wait, meta_question, other).
+- List any explicit targets (people/places/things) they mentioned.
+- List any explicit refusals (people/places/things they rejected).
+- Do not narrate; just fill the fields.
+
+Format exactly:
+Action: <single word>
+Targets: key one, key two
+Refusals: key one, key two
 """
 
 INTRO_PROMPT = """You are setting the scene for an interactive narrative.
 Use the provided starting state, active story nodes, and current beat to craft a concise introduction.
 
 Instructions:
-- Write in second person, immersive but brief (3-6 sentences).
-- Do not assume player actions or decisions; just describe the scene and immediate situation.
-- Avoid offering explicit choices; keep it open for the player to act next.
+- Write in second person, immersive narration.
+- Introduce the player's surroundings, and the starting premise of the story without spoiling future events.
+- Never assume player actions or decisions.
+- Never offer explicit choices; keep it open for the player to act next.
+- The player must drive all agency and change in the story. Do not take or suggest actions for them.
 
 Format exactly:
 Thoughts: <hidden reasoning>
@@ -133,6 +159,38 @@ class SessionSummary:
                 continue
             break
 
+@dataclass
+class LLMStep:
+    name: str
+    system_prompt: str
+    tags: set[str]
+    use_cot: bool = True
+    max_attempts: int = 3
+    validator: Optional[Callable[[Dict[str, str]], None]] = None
+    parser: Optional[Callable[[Dict[str, str]], Any]] = None
+
+    def run(self, adapter: LLMAdapter, payload_text: str) -> tuple[Any, str]:
+        attempts: List[str] = []
+        tags = set(self.tags)
+        if self.use_cot:
+            tags = tags | {"thoughts"}
+        for idx in range(self.max_attempts):
+            raw = adapter.request_text(self.name, self.system_prompt, payload_text)
+            sections = _parse_sections(raw, tags)
+            if self.validator:
+                try:
+                    self.validator(sections)
+                except Exception as exc:
+                    attempts.append(raw)
+                    payload_text = payload_text + f"\n\n(Note: last output was invalid: {exc}. Please follow the required format.)"
+                    continue
+            if self.parser:
+                return self.parser(sections), raw
+            return sections, raw
+        raise LLMError(
+            f"Step '{self.name}' failed after {self.max_attempts} attempts. Last output: {attempts[-1] if attempts else '<none>'}"
+        )
+
 
 class Orchestrator:
     def __init__(
@@ -140,8 +198,6 @@ class Orchestrator:
         *,
         model: str = "gpt-oss:20b",
         story_graph: Optional[StoryGraph] = None,
-        campaign_key: Optional[str] = None,
-        pg_dsn: Optional[str] = None,
         initial_keys: Optional[Sequence[str]] = None,
         beats: Optional[Sequence[str]] = None,
         starting_state: str = STARTING_STATE,
@@ -152,26 +208,12 @@ class Orchestrator:
         self.beat_list = list(beats or BEAT_LIST)
         self.beats = BeatTracker(self.beat_list)
         self.summary = SessionSummary()
-        self.story_source: PostgresStorySource | None = None
         self.turn_index: int = 0
+        self.story_status: str = ""
+        self.last_debug: Dict[str, Dict[str, str]] = {}
+        self.last_intent: Dict[str, List[str] | str] = {"action": "", "targets": [], "refusals": []}
 
-        graph = story_graph
-        loaded_beats: List[str] | None = None
-        if graph is None and campaign_key:
-            try:
-                self.story_source = PostgresStorySource(campaign_key=campaign_key, dsn=pg_dsn)
-                graph, loaded_beats = self.story_source.build_graph(initial_keys=initial_keys)
-            except Exception as exc:
-                logger.warning(
-                    "Falling back to built-in story graph; could not load campaign '%s': %s",
-                    campaign_key,
-                    exc,
-                )
-
-        self.story = graph or StoryGraph(initial_keys=initial_keys)
-        if loaded_beats:
-            self.beat_list = loaded_beats
-            self.beats = BeatTracker(self.beat_list)
+        self.story = story_graph or StoryGraph(initial_keys=initial_keys)
 
         self.discovered_keys: set[str] = set(self.story.initial_keys)
         self.current_focus: List[str] = list(self.story.initial_keys[:1])
@@ -183,41 +225,137 @@ class Orchestrator:
             stage_temperatures={"narrate": 0.75},
             verbose=verbose,
         )
+        self.step_intent = LLMStep(
+            name="intent",
+            system_prompt=INTENT_PROMPT,
+            tags={"action", "targets", "refusals"},
+            use_cot=False,
+            parser=_parse_intent_step,
+        )
+        # Define steps
+        self.step_focus = LLMStep(
+            name="focus",
+            system_prompt="",
+            tags={"focus"},
+            use_cot=False,
+            parser=_parse_focus_step,
+        )
+        self.step_plan = LLMStep(
+            name="plan",
+            system_prompt=PLAN_PROMPT,
+            tags={"plan"},
+            use_cot=True,
+            parser=lambda sections: sections.get("plan") or "",
+        )
+        self.step_status = LLMStep(
+            name="status",
+            system_prompt=STATUS_PROMPT,
+            tags={"status"},
+            use_cot=True,
+            parser=_parse_status_step,
+        )
+        self.step_validate = LLMStep(
+            name="validate",
+            system_prompt=VALIDATE_PROMPT,
+            tags={"verdict", "notes", "advance"},
+            use_cot=True,
+            validator=_validate_validation_step,
+            parser=lambda sections: (
+                sections.get("verdict", "approve"),
+                sections.get("notes", ""),
+                (sections.get("advance", "no").lower().startswith("y")),
+            ),
+        )
+        self.step_narrate = LLMStep(
+            name="narrate",
+            system_prompt=NARRATE_PROMPT,
+            tags={"narrative"},
+            use_cot=True,
+            validator=_validate_narration_step,
+            parser=_parse_narration_step,
+        )
 
     def run_turn(self, player_input: str) -> Dict[str, object]:
-        # refresh active slice before building prompts
+        debug_data: Dict[str, Dict[str, str]] = {}
+
+        # Intent step
+        intent_payload = self._build_intent_prompt(player_input)
+        intent, intent_raw = self.step_intent.run(self.adapter, intent_payload)
+        debug_data["intent"] = {"prompt": intent_payload, "raw": intent_raw}
+        self.last_intent = intent
+
+        # Apply intent to focus
+        self._apply_intent_to_focus(intent)
         self._refresh_active_keys()
+
+        # Focus refinement (optional)
+        focus_payload = self._build_focus_prompt(player_input, intent)
+        try:
+            focus_keys, focus_raw = self.step_focus.run(self.adapter, focus_payload)
+            debug_data["focus"] = {"prompt": focus_payload, "raw": focus_raw}
+            if focus_keys:
+                self.current_focus = [k for k in focus_keys if k in self.story.by_key]
+        except Exception:
+            pass
+        self._refresh_active_keys()
+
+        # Record player turn
         self.history.add_player_turn(player_input)
         self.summary.add("Player", player_input)
-        plan_prompt = self._build_plan_prompt(player_input)
-        plan_raw = self.adapter.request_text("plan", PLAN_PROMPT, plan_prompt)
-        plan = _parse_plan(plan_raw)
 
-        validate_prompt = self._build_validate_prompt(player_input, plan)
-        validate_raw = self.adapter.request_text("validate", VALIDATE_PROMPT, validate_prompt)
-        verdict, notes, advance = _parse_validation(validate_raw)
-        if advance and verdict.lower().startswith("approve"):
+        # Status step (story state)
+        try:
+            status_prompt = self._build_status_prompt()
+            status, status_raw = self.step_status.run(self.adapter, status_prompt)
+            self.story_status = status
+            debug_data["status"] = {"prompt": status_prompt, "raw": status_raw}
+        except Exception:
+            self.story_status = self._summary_text()
+
+        # Planning
+        plan_prompt = self._build_plan_prompt(player_input, intent)
+        plan, plan_raw = self.step_plan.run(self.adapter, plan_prompt)
+        debug_data["plan"] = {"prompt": plan_prompt, "raw": plan_raw}
+
+        # Validation
+        validation_prompt = self._build_validate_prompt(player_input, plan, intent)
+        (verdict, notes, advance), validate_raw = self.step_validate.run(self.adapter, validation_prompt)
+        debug_data["validate"] = {"prompt": validation_prompt, "raw": validate_raw}
+        # If invalid, retry planning once with validator notes
+        if str(verdict).lower().startswith("revise"):
+            plan, plan_raw = self.step_plan.run(
+                self.adapter,
+                self._build_plan_prompt(player_input, intent) + f"\n\nValidator Notes: {notes}",
+            )
+            validation_prompt = self._build_validate_prompt(player_input, plan, intent)
+            (verdict, notes, advance), validate_raw = self.step_validate.run(self.adapter, validation_prompt)
+            debug_data["validate_retry"] = {"prompt": validation_prompt, "raw": validate_raw}
+            debug_data["plan_retry"] = {"prompt": plan_prompt, "raw": plan_raw}
+        if advance and str(verdict).lower().startswith("approve"):
             self.beats.advance()
 
-        narrate_prompt = self._build_narrate_prompt(player_input, plan, verdict, notes)
-        narrate_raw = self.adapter.request_text("narrate", NARRATE_PROMPT, narrate_prompt)
-        narrative, recap, lookup_keys, focus_keys = _parse_narration(narrate_raw)
+        # Narration
+        narrate_prompt = self._build_narrate_prompt(player_input, plan, verdict, notes, intent)
+        narrative, narrate_raw = self.step_narrate.run(self.adapter, narrate_prompt)
+        debug_data["narrate"] = {"prompt": narrate_prompt, "raw": narrate_raw}
+        recap = ""
+        lookup_keys: List[str] = []
+        focus_keys: List[str] = []
 
-        # Load any missing nodes from source before updating focus/discovery
-        self._expand_from_source(lookup_keys + focus_keys)
-
-        # Update focus if the model provided it
+        # Update focus if narrator provided it
         if focus_keys:
             self.current_focus = [k for k in focus_keys if k in self.story.by_key]
 
-        unlocked = self._register_discovery(lookup_keys + focus_keys)
+        unlocked = self._register_discovery(lookup_keys + focus_keys + self.current_focus)
         self._refresh_active_keys(explicit_keys=lookup_keys + focus_keys)
 
-        dm_entry = f"{narrative}\nRecap: {recap}" if recap else narrative
+        # Summarize for memory (internal) using narrator text directly
+        self.summary.add("Recap", narrative)
+
+        dm_entry = narrative
         self.history.add_dm_turn(dm_entry)
-        if recap:
-            self.summary.add("Recap", recap)
         self.turn_index += 1
+        self.last_debug = debug_data
 
         return {
             "turn": self.turn_index,
@@ -234,6 +372,9 @@ class Orchestrator:
                 "next": self.beats.next(),
             },
             "session_summary": self.summary.text(),
+            "story_status": self.story_status,
+            "llm_debug": debug_data,
+            "intent": self.last_intent,
         }
 
     def generate_intro(self) -> Dict[str, str]:
@@ -287,121 +428,171 @@ class Orchestrator:
             "focus": list(self.current_focus),
             "discovered_keys": sorted(self.discovered_keys),
             "session_summary": self.summary.text(),
+            "story_status": self.story_status,
+            "llm_debug": self.last_debug,
             "history": history_turns,
             "nodes": nodes,
             "edges": edges,
         }
 
-    def _build_plan_prompt(self, player_input: str) -> str:
+    def _build_plan_prompt(self, player_input: str, intent: Dict[str, Any]) -> str:
         keys = sorted(self.active_keys)
         beat_text = self._beat_guide()
         summary = self._summary_text()
+        intent_block = _format_intent(intent)
         return textwrap.dedent(
             f"""
-            Starting State:
-            {self.starting_state}
+            # Intent
+            {intent_block}
 
-            Beat Guide:
-            {beat_text}
+            # Beat
+            Current: {self.beats.progress_text()}
+            Next: {self.beats.next() or 'None'}
+            Guide: {beat_text}
 
-            Current Beat:
-            {self.beats.progress_text()}
-            Next Beat:
-            {self.beats.next() or 'None'}
+            # Scene
+            Location/Focus: {', '.join(self.current_focus) or 'None'}
+            Active Nodes: {', '.join(keys) or 'None'}
+            Status: {self.story_status or 'Not set'}
+            Session Summary: {summary}
 
-            Story Nodes:
-            {self.story.describe(keys)}
-
-            Connections:
-            {self.story.list_connections(keys)}
-
-            Session Summary:
-            {summary}
-
-            Conversation So Far:
+            # Recent Conversation
             {self.history.as_text(limit=8) or 'No prior conversation.'}
 
-            Player Input:
+            # Player Input
             {player_input}
             """
         ).strip()
 
-    def _build_validate_prompt(self, player_input: str, plan: str) -> str:
+    def _build_validate_prompt(self, player_input: str, plan: str, intent: Dict[str, Any]) -> str:
         keys = sorted(self.active_keys)
         beat_text = self._beat_guide()
         summary = self._summary_text()
+        intent_block = _format_intent(intent)
         return textwrap.dedent(
             f"""
-            Starting State:
-            {self.starting_state}
+            # Intent
+            {intent_block}
 
-            Beat Guide:
-            {beat_text}
+            # Beat
+            Current: {self.beats.progress_text()}
+            Next: {self.beats.next() or 'None'}
+            Guide: {beat_text}
 
-            Current Beat:
-            {self.beats.progress_text()}
-            Next Beat:
-            {self.beats.next() or 'None'}
+            # Scene
+            Location/Focus: {', '.join(self.current_focus) or 'None'}
+            Active Nodes: {', '.join(keys) or 'None'}
+            Status: {self.story_status or 'Not set'}
+            Session Summary: {summary}
 
-            Story Nodes:
-            {self.story.describe(keys)}
-
-            Connections:
-            {self.story.list_connections(keys)}
-
-            Session Summary:
-            {summary}
-
-            Conversation So Far:
+            # Recent Conversation
             {self.history.as_text(limit=8) or 'No prior conversation.'}
 
-            Player Input:
+            # Player Input
             {player_input}
 
-            Proposed Plan:
+            # Proposed Plan
             {plan}
             """
         ).strip()
 
-    def _build_narrate_prompt(self, player_input: str, plan: str, verdict: str, notes: str) -> str:
+    def _build_narrate_prompt(self, player_input: str, plan: str, verdict: str, notes: str, intent: Dict[str, Any]) -> str:
         keys = sorted(self.active_keys)
         beat_text = self._beat_guide()
         summary = self._summary_text()
+        intent_block = _format_intent(intent)
         return textwrap.dedent(
             f"""
-            Starting State:
-            {self.starting_state}
+            # Intent
+            {intent_block}
 
-            Beat Guide:
-            {beat_text}
+            # Beat
+            Current: {self.beats.progress_text()}
+            Next: {self.beats.next() or 'None'}
+            Guide: {beat_text}
 
-            Current Beat:
-            {self.beats.progress_text()}
-            Next Beat:
-            {self.beats.next() or 'None'}
+            # Scene
+            Location/Focus: {', '.join(self.current_focus) or 'None'}
+            Active Nodes: {', '.join(keys) or 'None'}
+            Status: {self.story_status or 'Not set'}
+            Session Summary: {summary}
 
-            Story Nodes:
-            {self.story.describe(keys)}
-
-            Connections:
-            {self.story.list_connections(keys)}
-
-            Session Summary:
-            {summary}
-
-            Conversation So Far:
+            # Recent Conversation
             {self.history.as_text(limit=8) or 'No prior conversation.'}
 
-            Player Input:
+            # Player Input
             {player_input}
 
-            Validated Plan:
+            # Validated Plan
             {plan}
 
-            Validator Verdict: {verdict}
-            Validator Notes: {notes}
+            # Validator
+            Verdict: {verdict}
+            Notes: {notes}
             """
         ).strip()
+
+    def _build_focus_prompt(self, player_input: str, intent: Dict[str, Any]) -> str:
+        keys = sorted(self.active_keys)
+        return textwrap.dedent(
+            f"""
+            # Intent
+            {_format_intent(intent)}
+
+            # Available Nodes
+            {', '.join(keys)}
+
+            # Player Input
+            {player_input}
+            """
+        ).strip()
+
+    def _build_summary_prompt(self, player_input: str, narrative: str, recap: str) -> str:
+        return textwrap.dedent(
+            f"""
+            Player said:
+            {player_input}
+
+            Narrative given:
+            {narrative}
+
+            Recap (if any):
+            {recap}
+            """
+        ).strip()
+
+    def _build_intent_prompt(self, player_input: str) -> str:
+        return textwrap.dedent(
+            f"""
+            # Recent Conversation
+            {self.history.as_text(limit=6) or 'No prior conversation.'}
+
+            # Player Input
+            {player_input}
+            """
+        ).strip()
+
+    def _apply_intent_to_focus(self, intent: Dict[str, Any]) -> None:
+        """
+        Use the parsed intent to set the current focus.
+        - If action is move/talk/inspect and targets include known nodes, focus them.
+        - If refusals include current focus, clear it.
+        """
+        action = str(intent.get("action") or "").lower()
+        targets = [t for t in intent.get("targets", []) if t in self.story.by_key]
+        refusals = set(intent.get("refusals", []))
+
+        # If current focus is refused, drop it
+        if any(f in refusals for f in self.current_focus):
+            self.current_focus = []
+
+        if targets and action in {"move", "talk", "inspect", "other"}:
+            self.current_focus = targets[:2]
+        elif not self.current_focus and targets:
+            self.current_focus = targets[:2]
+        elif not self.current_focus:
+            # heuristic fallback
+            self._resolve_focus_from_player(" ".join(targets))
 
     def _build_intro_prompt(self) -> str:
         keys = sorted(self.active_keys)
@@ -431,6 +622,27 @@ class Orchestrator:
 
             Conversation So Far:
             {self.history.as_text(limit=4) or 'No prior conversation.'}
+            """
+        ).strip()
+
+    def _build_status_prompt(self) -> str:
+        keys = sorted(self.active_keys)
+        return textwrap.dedent(
+            f"""
+            Current Focus:
+            {', '.join(self.current_focus) or 'None'}
+
+            Active Nodes:
+            {', '.join(keys)}
+
+            Beat:
+            {self.beats.progress_text()}
+
+            Session Summary:
+            {self._summary_text()}
+
+            Conversation So Far:
+            {self.history.as_text(limit=6) or 'No prior conversation.'}
             """
         ).strip()
 
@@ -500,6 +712,53 @@ class Orchestrator:
         self.active_keys = set(active)
         return active
 
+    def _resolve_focus_from_player(self, text: str) -> None:
+        """
+        Lightweight focus resolver: look for a node name or alias in the player's message.
+        If found, shift focus to that node. Otherwise leave focus unchanged.
+        """
+        lowered = text.lower()
+        # common movement verbs to reduce false positives
+        verb_patterns = [
+            r"go to ([\w' ]+)",
+            r"head to ([\w' ]+)",
+            r"walk to ([\w' ]+)",
+            r"move to ([\w' ]+)",
+            r"enter ([\w' ]+)",
+            r"toward ([\w' ]+)",
+            r"to ([\w' ]+)",
+        ]
+
+        candidates: List[str] = []
+        for pat in verb_patterns:
+            for match in re.finditer(pat, lowered):
+                candidates.append(match.group(1).strip())
+
+        # fallback: any node name mentioned explicitly
+        for key in self.story.by_key:
+            if key.lower() in lowered:
+                candidates.append(key.lower())
+
+        if not candidates:
+            return
+
+        best = self._match_candidate_to_node(candidates[0])
+        if best:
+            self.current_focus = [best]
+
+    def _match_candidate_to_node(self, candidate: str) -> Optional[str]:
+        cand = candidate.strip().lower()
+        if not cand:
+            return None
+        # exact match
+        if cand in (k.lower() for k in self.story.by_key):
+            return next(k for k in self.story.by_key if k.lower() == cand)
+        # substring match heuristic: pick first node key containing candidate
+        for key in self.story.by_key:
+            if cand in key.lower():
+                return key
+        return None
+
     def _expand_from_source(self, keys: Iterable[str]) -> List[str]:
         if not self.story_source:
             return []
@@ -545,16 +804,29 @@ def _parse_validation(raw: str) -> tuple[str, str, bool]:
 
 
 def _parse_narration(raw: str) -> tuple[str, str, List[str], List[str]]:
-    sections = _parse_sections(raw, {"thoughts", "narrative", "recap", "lookup", "focus"})
+    sections = _parse_sections(raw, {"thoughts", "narrative"})
     narrative = sections.get("narrative", raw.strip())
-    recap = sections.get("recap", "")
-    lookups = []
-    if "lookup" in sections:
-        lookups = [token.strip() for token in sections["lookup"].split(",") if token.strip()]
-    focus = []
-    if "focus" in sections:
-        focus = [token.strip() for token in sections["focus"].split(",") if token.strip()]
-    return narrative.strip(), recap.strip(), lookups, focus
+    return narrative.strip(), "", [], []
+
+
+def _parse_focus_step(sections: Dict[str, str]) -> List[str]:
+    focus_raw = sections.get("focus", "")
+    return [token.strip() for token in focus_raw.split(",") if token.strip()]
+
+
+def _parse_narration_step(sections: Dict[str, str]) -> str:
+    return sections.get("narrative", "").strip()
+
+
+def _parse_status_step(sections: Dict[str, str]) -> str:
+    return sections.get("status", "").strip()
+
+
+def _parse_intent_step(sections: Dict[str, str]) -> Dict[str, Any]:
+    action = sections.get("action", "").strip()
+    targets = [tok.strip() for tok in sections.get("targets", "").split(",") if tok.strip()]
+    refusals = [tok.strip() for tok in sections.get("refusals", "").split(",") if tok.strip()]
+    return {"action": action, "targets": targets, "refusals": refusals}
 
 
 def _parse_sections(text: str, tags: set[str]) -> Dict[str, str]:
@@ -575,6 +847,37 @@ def _parse_sections(text: str, tags: set[str]) -> Dict[str, str]:
         if matched is None and current:
             collected[current].append(stripped)
     return {tag: "\n".join(parts).strip() for tag, parts in collected.items() if parts}
+
+
+# Validators for LLMStep
+def _require_focus_keys(sections: Dict[str, str]) -> None:
+    if "focus" not in sections or not sections["focus"].strip():
+        raise ValueError("Missing Focus section.")
+
+
+def _validate_validation_step(sections: Dict[str, str]) -> None:
+    verdict = sections.get("verdict", "").lower()
+    advance = sections.get("advance", "").lower()
+    if verdict not in {"approve", "revise"}:
+        raise ValueError("Verdict must be approve or revise.")
+    if not (advance.startswith("y") or advance.startswith("n") or advance in {"yes", "no"}):
+        raise ValueError("Advance must be yes or no.")
+
+
+def _validate_narration_step(sections: Dict[str, str]) -> None:
+    narrative = sections.get("narrative", "")
+    if not narrative:
+        raise ValueError("Missing Narrative section.")
+    # crude guard against numbered choices
+    if re.search(r"\b1\)", narrative) or re.search(r"\b2\)", narrative):
+        raise ValueError("Narrative contains numbered choices; remove menus/options.")
+
+
+def _format_intent(intent: Dict[str, Any]) -> str:
+    action = intent.get("action") or ""
+    targets = ", ".join(intent.get("targets") or [])
+    refusals = ", ".join(intent.get("refusals") or [])
+    return f"Action: {action}\nTargets: {targets or 'None'}\nRefusals: {refusals or 'None'}"
 
 
 __all__ = ["Orchestrator"]

@@ -549,15 +549,16 @@ STARTING_STATE = (
     "Dusk settles over the harbor town as you stand in the middle of its cobbled square. Lanterns flicker to "
     "life one by one, and the people moving between the Temple of the Tide, the town hall, and the Copper Cup "
     "all wear the same drawn, sleepless look. In hushed tones they talk about bloodstains found in houses all "
-    "over town, nights they cannot remember, and the town wizard who never seems to leave his guarded home."
+    "over town, nights they cannot remember, and the town wizard who never seems to leave his guarded home." 
+    "You've heard strange rumors about this town, about murderous stains with no missing bodies."
 )
 
 BEAT_LIST = [
-    "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies.",
-    "Have Mitch, the anxious lumberjack, plead with the newly arrived player in the square to investigate the bloodstains when they are ready.",
+    "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+    "Once the player encounters Mitch, the anxious lumberjack, he will plead with the newly arrived player in the square to investigate the bloodstains. Mitch will suggest that the Wizard is involved, but very dangerous.",
     "Let the player freely investigate houses and locations around town to gather clues about the bloodstains, memory gaps, and the reclusive town wizard.",
-    "Reveal the true pattern: Mitch is the killer, and the town wizard secretly resurrects his victims each night and wipes their memories.",
-    "Stage a final confrontation in which the player decides how to resolve the situation and whom to side with.",
+    "When the player has gathered enough information to have a theory the wizard will speak with them directly with Mitch in attendance. The wizard will reveal that Mitch is the killer and each night he erases everyones memory and undoes his crimes. Mitch is driven to madness by the revelation and begs the player to kill the Wizard. The Wizard asks the player to put Mitch out of his misery.",
+    "The player can decide to handle the situation however they see fit, including killing either Mitch or the Wizard, trying to convince Mitch to stop, or finding another solution entirely.",
 ]
 
 

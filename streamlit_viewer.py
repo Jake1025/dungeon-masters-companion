@@ -97,6 +97,9 @@ def main() -> None:
     st.subheader("Session Summary")
     st.text(snapshot.get("session_summary") or "No summary yet.")
 
+    st.subheader("Story Status")
+    st.text(snapshot.get("story_status") or "No status recorded.")
+
     st.subheader("History")
     for turn in snapshot.get("history") or []:
         st.markdown(f"**{turn.get('role','').title()}:** {turn.get('content','')}")
