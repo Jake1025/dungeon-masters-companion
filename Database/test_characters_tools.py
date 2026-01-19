@@ -6,11 +6,11 @@
 import os
 import uuid
 
-# Point to your local Compose Postgres unless PG_DSN is already set
+# Point to local Compose Postgres unless PG_DSN is already set
 os.environ.setdefault("PG_DSN", "postgresql://postgres:postgres@localhost:5432/dmai")
 PG_DSN = os.environ["PG_DSN"]
 
-# Import tools from your server module.
+# Import tools from server module.
 # Adjust the import below if your file/module name differs.
 try:
     # Preferred path if your repo keeps it under Database/
@@ -23,7 +23,7 @@ try:
         SetEquippedIn,
     )
 except ImportError:
-    # Fallback if your module is named differently in your environment
+    # fallback
     from MCP_data_characters import (
         characters_list_entities,
         characters_get_entity,
@@ -34,7 +34,6 @@ except ImportError:
     )
 
 from psycopg import rows, connect
-
 
 def _get_session_id_for(name: str = "Test Hero") -> str:
     """
@@ -59,11 +58,11 @@ def _get_session_id_for(name: str = "Test Hero") -> str:
 
 
 def test_list_and_get_roundtrip():
-    # --- Discover the session containing Test Hero ---
+    # Discover the session containing Test Hero 
     sid = _get_session_id_for("Test Hero")
     assert isinstance(sid, str)
 
-    # --- List entities in that session ---
+    # List entities in that session
     out = characters_list_entities(ListEntitiesIn(session_id=sid))
     assert out.ok, f"list_entities not ok: {out.error}"
     entities = (out.data or {}).get("entities") or []
@@ -74,13 +73,13 @@ def test_list_and_get_roundtrip():
     assert hero, "Test Hero not found in list_entities output"
     hero_id = str(hero["id"])
 
-    # --- Get full sheet and verify same id ---
+    #  Get full sheet and verify same id 
     got = characters_get_entity(GetEntityIn(session_id=sid, name="Test Hero"))
     assert got.ok, f"get_entity not ok: {got.error}"
     returned_id = str(got.data["entity"]["id"])
     assert returned_id == hero_id, "Entity id mismatch between list and get"
 
-    # --- Equip mutation (idempotent) ---
+    # Equip mutation (idempotent)
     req_id = str(uuid.uuid4())
     res = characters_set_equipped(
         SetEquippedIn(
