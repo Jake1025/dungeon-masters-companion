@@ -380,7 +380,7 @@ class Orchestrator:
     def generate_intro(self) -> Dict[str, str]:
         prompt = self._build_intro_prompt()
         intro_raw = self.adapter.request_text("intro", INTRO_PROMPT, prompt)
-        narrative, recap, _ = _parse_narration(intro_raw)
+        narrative, recap, _, _ = _parse_narration(intro_raw)
         dm_entry = f"{narrative}\nRecap: {recap}" if recap else narrative
         self.history.add_dm_turn(dm_entry)
         if recap:
