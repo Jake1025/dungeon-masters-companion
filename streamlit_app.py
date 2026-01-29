@@ -11,6 +11,7 @@ from orchestrator.story import STARTING_STATE
 
 
 PLAYER_BG_PATH = Path("UI-Assets/town-square.jpg")
+APP_BG_PATH = Path("UI-Assets/FantasyPort.jpg")
 
 
 def _parse_keys(raw: str) -> List[str]:
@@ -65,30 +66,129 @@ def _inject_player_background(image_path: Path) -> None:
     st.markdown(
         f"""
         <style>
+          @import url('https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap');
+
           :root {{
             --player-bg: url("data:{mime};base64,{encoded}");
           }}
 
-          .player-tab {{
-            background-image: linear-gradient(180deg, rgba(9, 12, 18, 0.75), rgba(9, 12, 18, 0.45)), var(--player-bg);
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            border-radius: 14px;
-            padding: 1.25rem 1.5rem 1.5rem;
-            min-height: 60vh;
+          .block-container {{
+            max-width: 1600px;
+            padding-left: 2.25rem;
+            padding-right: 2.25rem;
           }}
 
-          .player-tab [data-testid="stChatMessage"] {{
+          .tangerine-regular {{
+            font-family: "Tangerine", cursive;
+            font-weight: 400;
+            font-style: normal;
+          }}
+
+          .tangerine-bold {{
+            font-family: "Tangerine", cursive;
+            font-weight: 700;
+            font-style: normal;
+          }}
+
+          .hero-caption {{
+            text-align: center;
+            margin-top: -0.35rem;
+            margin-bottom: 1.25rem;
+            color: rgba(243, 239, 230, 0.8);
+          }}
+
+          [data-testid="stTabs"] [role="tablist"] {{
+            justify-content: center;
+          }}
+
+          [data-testid="stChatMessage"] {{
             background: rgba(8, 10, 14, 0.55);
             border-radius: 12px;
             padding: 0.15rem 0.85rem;
           }}
 
-          [data-testid="stChatInput"] textarea {{
-            background: rgba(10, 12, 18, 0.65);
+          div[data-testid="stVerticalBlock"]:has(#character-image-anchor) {{
+            position: relative;
+          }}
+
+          div[data-testid="stVerticalBlock"]:has(#character-image-anchor)
+            div[data-testid="stElementContainer"]:has(#character-image-anchor) {{
+            display: none;
+          }}
+
+          div[data-testid="stVerticalBlock"]:has(#character-image-anchor)
+            div[data-testid="stElementContainer"]:has(#character-image-anchor)
+            + div[data-testid="stElementContainer"] {{
+            position: absolute;
+            top: 0.6rem;
+            right: 0.6rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 5;
+          }}
+
+          div[data-testid="stVerticalBlock"]:has(#character-image-anchor):has(div[data-testid="stImage"]:hover)
+            div[data-testid="stElementContainer"]:has(#character-image-anchor)
+            + div[data-testid="stElementContainer"],
+          div[data-testid="stVerticalBlock"]:has(#character-image-anchor):has(div[data-testid="stButton"]:hover)
+            div[data-testid="stElementContainer"]:has(#character-image-anchor)
+            + div[data-testid="stElementContainer"] {{
+            opacity: 1;
+            pointer-events: auto;
+            transition-delay: 0.2s;
+          }}
+
+          div[data-testid="stVerticalBlock"]:has(#character-image-anchor)
+            div[data-testid="stElementContainer"]:has(#character-image-anchor)
+            + div[data-testid="stElementContainer"] > div[data-testid="stButton"] > button {{
+            white-space: nowrap;
+            padding: 0.35rem 0.7rem;
+            min-width: 0;
+            width: auto;
+            font-size: 0.8rem;
+            line-height: 1.1;
+            border-radius: 999px;
+            background: rgba(9, 12, 18, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: #f3efe6;
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+          }}
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _inject_app_background(image_path: Path) -> None:
+    try:
+        data = image_path.read_bytes()
+    except OSError:
+        st.warning(f"App background image not found at {image_path.as_posix()}")
+        return
+
+    suffix = image_path.suffix.lower()
+    mime = "image/jpeg"
+    if suffix == ".png":
+        mime = "image/png"
+    elif suffix == ".webp":
+        mime = "image/webp"
+
+    encoded = base64.b64encode(data).decode("ascii")
+    st.markdown(
+        f"""
+        <style>
+          :root {{
+            --app-bg: url("data:{mime};base64,{encoded}");
+          }}
+
+          body,
+          .stApp,
+          div[data-testid="stAppViewContainer"] {{
+            background-image: var(--app-bg);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
           }}
         </style>
         """,
@@ -97,9 +197,17 @@ def _inject_player_background(image_path: Path) -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="Dungeon Master's Companion", layout="centered")
-    st.title("Dungeon Master's Companion")
-    st.caption("Describe your character's actions. The Dungeon Master responds and advances the story.")
+    st.set_page_config(page_title="The Dungeon Master's Companion", layout="wide")
+    st.markdown(
+        '<h1 class="tangerine-bold" '
+        'style="font-size:70px; text-align:center; margin-bottom:0.25rem; font-family:\'Tangerine\', cursive;">'
+        "The Dungeon Master's Companion</h1>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        '<div class="hero-caption">Describe your character\'s actions. The Dungeon Master responds and advances the story.</div>',
+        unsafe_allow_html=True,
+    )
 
     with st.sidebar:
         st.header("Session")
@@ -128,24 +236,34 @@ def main() -> None:
         _initialize_session(model, keys, starting_state)
 
     _inject_player_background(PLAYER_BG_PATH)
+    _inject_app_background(APP_BG_PATH)
 
     orchestrator = _get_orchestrator()
-    messages: List[Dict[str, str]] = st.session_state.get("messages", [])
 
     play_tab, dm_tab = st.tabs(["Player View", "DM Tools"])
 
     with play_tab:
-        st.markdown('<div class="player-tab">', unsafe_allow_html=True)
-        for message in messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+        st.markdown('<div id="play-layout-anchor"></div>', unsafe_allow_html=True)
+        spacer_col, chat_col, character_col = st.columns([1, 2.4, 1], gap="large")
 
-        player_input = st.chat_input("Describe what your character does...")
-        if player_input:
-            st.session_state.messages.append({"role": "user", "content": player_input})
-            with st.chat_message("user"):
-                st.markdown(player_input)
-            with st.chat_message("assistant"):
+        with chat_col:
+            st.image(PLAYER_BG_PATH, use_container_width=True)
+            messages_container = st.container()
+            with messages_container:
+                for message in st.session_state.get("messages", []):
+                    with st.chat_message(message["role"]):
+                        st.markdown(message["content"])
+
+            with st.form("chat_form", clear_on_submit=True):
+                player_input = st.text_area(
+                    "Describe what your character does...",
+                    height=90,
+                    label_visibility="collapsed",
+                )
+                submitted = st.form_submit_button("Send")
+
+            if submitted and player_input.strip():
+                st.session_state.messages.append({"role": "user", "content": player_input})
                 with st.spinner("The Dungeon Master is thinking..."):
                     try:
                         turn = orchestrator.run_turn(player_input)
@@ -154,9 +272,50 @@ def main() -> None:
                     except Exception as exc:
                         response = "The Dungeon Master is unavailable right now."
                         st.error(f"Failed to generate a response: {exc}")
-                st.markdown(response)
-            st.session_state.messages.append({"role": "assistant", "content": response})
-        st.markdown("</div>", unsafe_allow_html=True)
+                st.session_state.messages.append({"role": "assistant", "content": response})
+                st.rerun()
+
+        with character_col:
+            st.subheader("Character")
+            image_container = st.container()
+            with image_container:
+                character_image = st.session_state.get("character_image_upload")
+                if character_image is None:
+                    character_image = st.file_uploader(
+                    "Character image",
+                    type=["png", "jpg", "jpeg", "webp"],
+                    key="character_image_upload",
+                )
+                if character_image:
+                    st.markdown('<div id="character-image-anchor"></div>', unsafe_allow_html=True)
+                    if st.button("Reupload image", key="character_image_reupload"):
+                        st.session_state.character_image_upload = None
+                        st.rerun()
+                    st.image(character_image, use_container_width=True)
+
+            description_default = st.session_state.get("character_description", "")
+            description = st.text_area(
+                "Character description",
+                value=description_default,
+                height=160,
+                key="character_description",
+            )
+            inventory_default = st.session_state.get("character_inventory", "")
+            st.text_area(
+                "Inventory",
+                value=inventory_default,
+                height=140,
+                placeholder="One item per line",
+                key="character_inventory",
+            )
+            stats_default = st.session_state.get("character_stats", "")
+            st.text_area(
+                "Character stats",
+                value=stats_default,
+                height=140,
+                placeholder="e.g., STR 14, DEX 12, CON 13",
+                key="character_stats",
+            )
 
     with dm_tab:
         st.subheader("Campaign Status")
