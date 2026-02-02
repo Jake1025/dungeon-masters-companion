@@ -1,5 +1,5 @@
 """Interactive story orchestration utilities."""
 
-from .pipeline import Orchestrator
+from .pipeline import StoryEngine
 
-__all__ = ["Orchestrator"]
+__all__ = ["StoryEngine"]
