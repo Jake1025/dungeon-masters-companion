@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 import streamlit as st
 
-from orchestrator.pipeline import Orchestrator
+from orchestrator.pipeline import StoryEngine
 from orchestrator.story import STARTING_STATE
 
 
@@ -23,7 +23,7 @@ def _config_signature(model: str, keys: List[str], starting_state: str) -> str:
 
 
 def _initialize_session(model: str, keys: List[str], starting_state: str) -> None:
-    orchestrator = Orchestrator(
+    engine = StoryEngine(
         model=model,
         initial_keys=keys or None,
         starting_state=starting_state,
@@ -31,20 +31,20 @@ def _initialize_session(model: str, keys: List[str], starting_state: str) -> Non
     messages: List[Dict[str, str]] = []
     intro_text = starting_state
     try:
-        intro = orchestrator.generate_intro()
+        intro = engine.generate_intro()
         intro_text = intro.get("ic") or starting_state
     except Exception as exc:
         st.warning("Intro generation failed; showing the starting state instead.")
         st.exception(exc)
     messages.append({"role": "assistant", "content": intro_text})
 
-    st.session_state.orchestrator = orchestrator
+    st.session_state.orchestrator = engine
     st.session_state.messages = messages
     st.session_state.last_turn = {}
     st.session_state.config_sig = _config_signature(model, keys, starting_state)
 
 
-def _get_orchestrator() -> Orchestrator:
+def _get_story_engine() -> StoryEngine:
     return st.session_state.orchestrator
 
 
@@ -211,18 +211,25 @@ def main() -> None:
 
     with st.sidebar:
         st.header("Session")
-        model = st.text_input("Ollama model", value=st.session_state.get("model_input", "llama3.1:8b"), key="model_input")
+        model = st.text_input(
+            "Ollama model",
+            value=st.session_state.get("model_input", "llama3.1:8b"),
+            key="model_input",
+        ) or ""
+
         keys_raw = st.text_input(
             "Starting keys (comma-separated)",
             value=st.session_state.get("keys_input", ""),
             key="keys_input",
-        )
+        ) or ""
+
         starting_state = st.text_area(
             "Starting state",
             value=st.session_state.get("starting_state_input", STARTING_STATE),
             height=200,
             key="starting_state_input",
-        )
+        ) or ""
+
         start_new = st.button("Start new session")
         show_status = st.checkbox("Show story status", value=True)
         show_debug = st.checkbox("Show debug info", value=False)
@@ -238,7 +245,7 @@ def main() -> None:
     _inject_player_background(PLAYER_BG_PATH)
     _inject_app_background(APP_BG_PATH)
 
-    orchestrator = _get_orchestrator()
+    engine = _get_story_engine()
 
     play_tab, dm_tab = st.tabs(["Player View", "DM Tools"])
 
@@ -266,7 +273,7 @@ def main() -> None:
                 st.session_state.messages.append({"role": "user", "content": player_input})
                 with st.spinner("The Dungeon Master is thinking..."):
                     try:
-                        turn = orchestrator.run_turn(player_input)
+                        turn = engine.run_turn(player_input)
                         response = turn["narration"]["ic"]
                         st.session_state.last_turn = turn
                     except Exception as exc:
@@ -325,7 +332,7 @@ def main() -> None:
                 beat = turn.get("beat_state", {})
                 st.markdown(
                     f"**Beat:** {beat.get('current_index', 0) + 1} "
-                    f"of {len(orchestrator.beat_list)} - {beat.get('current', '')}"
+                    f"of {len(engine.beats.beats)} - {beat.get('current', '')}"
                 )
                 st.markdown(f"**Focus:** {', '.join(turn.get('focus') or []) or 'None'}")
                 st.markdown(f"**Active keys:** {', '.join(turn.get('active_keys') or []) or 'None'}")

@@ -1,4 +1,6 @@
-fastmcp==2.*          # MCP helper
-pydantic==2.*         # models
-psycopg[binary]==3.*  # Postgres driver (no system libpq needed)
-streamlit==1.*        # UI
+mcp==1.26.0
+ollama==0.6.1
+psycopg==3.3.2
+pydantic==2.12.5
+pytest==9.0.2
+streamlit==1.53.1
