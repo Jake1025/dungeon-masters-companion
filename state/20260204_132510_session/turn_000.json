@@ -1,0 +1,31 @@
+{
+  "turn": 0,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bronze Fountain Coin",
+    "Copper Cup",
+    "East Alley",
+    "Harbor Gate",
+    "Market Stalls",
+    "Mitch",
+    "Old Well",
+    "South Bridge",
+    "Street Performer Jorin",
+    "Temple of the Tide",
+    "Town Crier Jessa",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks"
+  ],
+  "focus": [
+    "Town Square"
+  ],
+  "session_summary": "Intro: The scent of brine and woodsmoke hangs heavy in the air as you step into the Town Square. Dusk has fully embraced Oakhaven, casting long, distorted shadows from the buildings that ring the space. Most of the townsfolk are huddled near the Bronze Fountain, their faces etched with a weary resignation. A few children play listlessly, kicking at loose stones, but their laughter feels muted, swallowed by the growing gloom. The fountain itself is dry, its once-gleaming surface dulled with grime, reflecting the somber light. You notice a small crowd gathered around the Old Well, a woman murmuring prayers, and a couple arguing quietly near the Market Stalls, their voices strained. The air is thick with unspoken anxieties. Jessa, the Town Crier, is pacing, shouting about a \u201cdark omen\u201d \u2013 a phrase that seems to hang in the air, adding to the unsettling feeling. You take a moment to examine the stains themselves. They\u2019re dark, almost black, marring the cobblestones near the South Bridge. Small, circular, and disturbingly fresh-looking, considering the lack of any immediate signs of a victim. The Street Performer, Jorin, is packing up his instruments, his usual cheerful demeanor replaced with a nervous fidgeting. The Watch Barracks stand silent and watchful at the edge of the square. The Temple of the Tide looms behind, its stone columns casting a long, ominous shadow. There\u2019s a palpable sense of unease, a feeling that something terrible is about to happen, or perhaps, has already.",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The scent of brine and woodsmoke hangs heavy in the air as you step into the Town Square. Dusk has fully embraced Oakhaven, casting long, distorted shadows from the buildings that ring the space. Most of the townsfolk are huddled near the Bronze Fountain, their faces etched with a weary resignation. A few children play listlessly, kicking at loose stones, but their laughter feels muted, swallowed by the growing gloom. The fountain itself is dry, its once-gleaming surface dulled with grime, reflecting the somber light. You notice a small crowd gathered around the Old Well, a woman murmuring prayers, and a couple arguing quietly near the Market Stalls, their voices strained. The air is thick with unspoken anxieties. Jessa, the Town Crier, is pacing, shouting about a \u201cdark omen\u201d \u2013 a phrase that seems to hang in the air, adding to the unsettling feeling. You take a moment to examine the stains themselves. They\u2019re dark, almost black, marring the cobblestones near the South Bridge. Small, circular, and disturbingly fresh-looking, considering the lack of any immediate signs of a victim. The Street Performer, Jorin, is packing up his instruments, his usual cheerful demeanor replaced with a nervous fidgeting. The Watch Barracks stand silent and watchful at the edge of the square. The Temple of the Tide looms behind, its stone columns casting a long, ominous shadow. There\u2019s a palpable sense of unease, a feeling that something terrible is about to happen, or perhaps, has already."
+    }
+  ]
+}

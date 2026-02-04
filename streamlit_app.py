@@ -6,8 +6,8 @@ from typing import Any, Dict, List
 
 import streamlit as st
 
-from orchestrator.pipeline import StoryEngine
-from orchestrator.story import STARTING_STATE
+from orchestrator.runtime_flow.pipeline import StoryEngine
+from orchestrator.world_state.story import STARTING_STATE
 
 
 PLAYER_BG_PATH = Path("UI-Assets/town-square.jpg")

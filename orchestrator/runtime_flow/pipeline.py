@@ -1,10 +1,10 @@
 from typing import Any, Dict, Sequence, Optional
-from .history import History
-from .story import StoryGraph, BEAT_LIST, STARTING_STATE
-from .llm_interaction.adapter import LLMAdapter
+from .conversation_log import History
+from ..world_state.story import StoryGraph, BEAT_LIST, STARTING_STATE
+from ..llm_interaction.adapter import LLMAdapter
 from .session_state import BeatTracker, SessionSummary, ActiveKeyManager, FocusManager, SnapshotBuilder
-from .llm_interaction.registry import build_steps
-from .llm_interaction.prompt_builders import (
+from .step_registry import build_steps
+from ..llm_interaction.prompt_builders import (
     PromptState,
     build_intro_prompt,
     build_intent_prompt,

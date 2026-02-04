@@ -8,7 +8,7 @@ from .step import (
     validate_narration_step,
 )
 
-from .prompt_texts import (
+from ..llm_interaction.prompt_texts import (
     INTENT_PROMPT,
     PLAN_PROMPT,
     NARRATE_PROMPT,
