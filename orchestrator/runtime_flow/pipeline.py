@@ -44,10 +44,21 @@ class StoryEngine:
 
         self.adapter = LLMAdapter(
             model=model,
-            default_temperature=0.6,
-            stage_temperatures={"narrate": 0.75},
+            default_options={
+                "temperature": 0.6,
+                "top_p": 0.9,
+                # "repeat_penalty": 1.1,
+                # "num_predict": 512,
+            },
+            stage_options={
+                "narrate": {
+                    "temperature": 0.75,
+                    "top_p": 0.93,
+                },
+            },
             verbose=verbose,
         )
+
 
 
         self.steps = build_steps()

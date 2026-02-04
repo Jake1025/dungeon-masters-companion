@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Callable, Dict, List, Mapping, Optional
+from typing import Any, Callable, Dict, Mapping, Optional
 
 import ollama
 from ollama import ResponseError
@@ -24,17 +24,15 @@ class LLMAdapter:
         self,
         model: str,
         *,
-        default_temperature: float = 0.0,
-        stage_temperatures: Optional[Mapping[str, float]] = None,
-        options: Optional[Mapping[str, Any]] = None,
+        default_options: Optional[Mapping[str, Any]] = None,
+        stage_options: Optional[Mapping[str, Mapping[str, Any]]] = None,
         max_attempts: int = 3,
         verbose: bool = False,
-        trace: bool = False,
     ) -> None:
+
         self.model = model
-        self.default_temperature = default_temperature
-        self.stage_temperatures = dict(stage_temperatures or {})
-        self.options = dict(options or {})
+        self.default_options = dict(default_options or {})
+        self.stage_options = dict(stage_options or {})
         self.max_attempts = max(1, max_attempts)
         self.verbose = verbose
 
@@ -55,6 +53,7 @@ class LLMAdapter:
                     options=options,
                 )
                 content = self._extract_content(response)
+
             except ResponseError as exc:
                 content = self._extract_raw_from_error(exc) or ""
 
@@ -135,12 +134,12 @@ class LLMAdapter:
             {"role": "user", "content": user_payload},
         ]
 
-    def _stage_options(self, stage: str):
-        options = dict(self.options)
-        options.setdefault(
-            "temperature",
-            self.stage_temperatures.get(stage, self.default_temperature),
-        )
+    def _stage_options(self, stage: str) -> Dict[str, Any]:
+        options = dict(self.default_options)
+
+        if stage in self.stage_options:
+            options.update(self.stage_options[stage])
+
         return options
 
     # -------------------------------------------------
