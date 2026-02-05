@@ -99,6 +99,11 @@ def change_location_tool(entity_name: str, destination: str) -> ChangeLocationRe
         location: {name, vector} or None if the entity was not found
     """
 
+    """
+    if the entity is in a location that connects to the desired destination, move, if not don't move. -JM
+    """
+
+
     entity = ENTITY_REGISTRY.get(entity_name)
     if entity is None:
         return {
