@@ -13,19 +13,40 @@ import pytest
 
 import server
 
+import shutil
+
 
 # ------------------------------------------------------------
 # Fixtures / 固件
 # ------------------------------------------------------------
 
-@pytest.fixture
-def map_file(tmp_path: Path) -> Path:
+
+#@pytest.fixture
+def artifact_dir(request) -> Path:
+    """
+    中文：每个测试函数一个独立产物目录（避免互相污染）
+    English: One artifact subdirectory per test (no cross-test pollution)
+    """
+    base = Path(__file__).resolve().parent / "tests_artifacts"
+    test_dir = base / request.node.name
+
+    if test_dir.exists():
+        shutil.rmtree(test_dir)
+    test_dir.mkdir(parents=True, exist_ok=True)
+
+    return test_dir
+
+
+#@pytest.fixture
+def map_file(artifact_dir: Path) -> Path:
     """
     中文：
-      生成一个可用的测试地图（A00-A01-A02 与 B00-B01-B02-B03 结构）
-      A02 连接到 B02（作为桥）
+      生成一个可用的测试地图 map.json，并保存到 MCP 文件夹下的 tests_artifacts/<testname>/ 中。
+      A00-A01-A02 与 B00-B01-B02-B03，并用 A02-B02 作为桥连接。
+
     English:
-      Build a test map with two rows and a bridge from A02 to B02.
+      Build a test map.json under tests_artifacts/<testname>/.
+      Two rows connected by a bridge A02<->B02.
     """
     data = {
         "nodes": {
@@ -47,16 +68,16 @@ def map_file(tmp_path: Path) -> Path:
             "B03": ["B02"],
         },
     }
-    m = tmp_path / "map.json"
+    m = artifact_dir / "map.json"
     m.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     return m
 
 
-@pytest.fixture
-def location_index_file(tmp_path: Path) -> Path:
+#@pytest.fixture
+def location_index_file(artifact_dir: Path) -> Path:
     """
-    中文：最小 location_index.json（只要 name 字段即可）
-    English: minimal location_index.json (name is enough)
+    中文：最小 location_index.json（只要 name/desc 字段即可），同样写到 artifact_dir 中。
+    English: minimal location_index.json written into artifact_dir.
     """
     idx = {
         "A00": {"name": "A00", "desc_zh": "起点", "desc_en": "start"},
@@ -67,7 +88,7 @@ def location_index_file(tmp_path: Path) -> Path:
         "B02": {"name": "B02"},
         "B03": {"name": "B03"},
     }
-    p = tmp_path / "location_index.json"
+    p = artifact_dir / "location_index.json"
     p.write_text(json.dumps(idx, ensure_ascii=False, indent=2), encoding="utf-8")
     return p
 
@@ -174,7 +195,8 @@ def test_blocked_edge_rule(map_file: Path, location_index_file: Path):
     assert out.blocked["reason_code"] in {"edge_blocked", "unreachable", "blocked"}
 
 
-def test_move_persist_logs_then_writes_state(map_file: Path, location_index_file: Path, tmp_path: Path):
+def test_move_persist_logs_then_writes_state(map_file, location_index_file, artifact_dir):
+
     """
     中文：
       测试 persist=true 的“先 log 再 state”语义：
@@ -190,8 +212,8 @@ def test_move_persist_logs_then_writes_state(map_file: Path, location_index_file
       3) last_event_id equals log event_id
       4) log before/after versions align with snapshot version
     """
-    state_file = tmp_path / "world_state.json"
-    log_file = tmp_path / "state_events.jsonl"
+    state_file = artifact_dir / "world_state.json"
+    log_file = artifact_dir / "state_events.jsonl"
 
     # Initial snapshot / 初始状态
     state_file.write_text(

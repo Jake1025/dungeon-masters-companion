@@ -1,0 +1,1 @@
+{"event_id": "evt_blocked_1", "ts": "2026-02-07T03:50:11+00:00", "type": "move", "actor": "player", "payload": {"from": "A00", "to": "B03", "ok": false, "path": [], "distance": null}, "patch": [], "state_version_before": 0, "state_version_after": 0}
