@@ -1,0 +1,1 @@
+{"event_id": "c136f2c4178e8be1", "ts": "2026-02-06T23:27:43-05:00", "type": "move", "actor": "orchestrator", "payload": {"from": "L001", "to": "L003", "ok": true, "path": ["L001", "L003"], "distance": 1}, "patch": [{"op": "replace", "path": "/player/location", "value": "L003"}], "meta": {"persist": true}, "state_version_before": 0, "state_version_after": 1}

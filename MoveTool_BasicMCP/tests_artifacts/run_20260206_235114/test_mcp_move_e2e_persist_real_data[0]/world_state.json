@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "player": {
+    "location": {
+      "id": "L002",
+      "name": "Market Stalls",
+      "desc_zh": "商贩云集，叫卖喧哗",
+      "desc_en": "A cluster of market stalls filled with merchants and customers."
+    },
+    "location_id": "L002"
+  },
+  "last_event_id": "b4ef18cc14d7d0f5"
+}

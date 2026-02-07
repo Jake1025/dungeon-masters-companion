@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "player": {
+    "location": "L003",
+    "location_view": {
+      "id": "L003",
+      "name": "Temple of the Tide",
+      "desc_zh": "潮汐圣所，静谧肃穆",
+      "desc_en": "A serene temple dedicated to the tides and the sea."
+    }
+  },
+  "last_event_id": "76f50143cb4f3fed"
+}

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "player": {
+    "location": "L004",
+    "location_view": {
+      "id": "L004",
+      "name": "Town Hall",
+      "desc_zh": "政务中枢，文书往来",
+      "desc_en": "The administrative heart of the town."
+    }
+  },
+  "last_event_id": "cbc94aeb04e668ec"
+}

@@ -41,16 +41,21 @@ from state_store import StateStore
 from event_log import EventLog
 
 # ============================================================
-# Path helpers / 路径辅助
+# Path constants / 路径常量
 # ============================================================
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
 
+# 中文：默认存储位置（相对 BASE_DIR）
+# English: default storage paths (relative to BASE_DIR)
+DEFAULT_STATE_FILE = "state/world_state.json"
+DEFAULT_LOG_FILE = "logs/movement_log.jsonl"
+
 
 def resolve_path(p: Optional[str]) -> Optional[str]:
     """
-    中文：相对路径 -> BASE_DIR 下的绝对路径；绝对路径保持不变
+    中文：相对路径 -> BASE_DIR 下绝对路径；绝对路径保持不变
     English: resolve relative path against BASE_DIR; keep absolute as-is
     """
     if p is None:
@@ -72,7 +77,7 @@ def graph_node_ids(graph: Any) -> set[str]:
       这里统一提取“所有节点 id 的集合”，用于校验 from/to 是否存在。
     English:
       GraphStore.load() may return dict or Graph object.
-      This function extracts all node ids for membership checks.
+      Extract node ids for membership checks.
     """
     # 1) adjacency dict: {node_id: [neighbors...]}
     if isinstance(graph, dict):
@@ -123,7 +128,7 @@ class MoveInput(BaseModel):
 
     persist: bool = Field(default=False)
     state_file: Optional[str] = Field(default=None, description="Path to world_state.json (snapshot)")
-    log_file: Optional[str] = Field(default=None, description="Path to state_events.jsonl (append-only)")
+    log_file: Optional[str] = Field(default=None, description="Path to movement_log.jsonl (append-only)")
 
     timezone_str: str = Field(default="America/New_York", description="Timezone for event timestamps")
 
@@ -141,7 +146,10 @@ class MoveOutput(BaseModel):
 
     new_location: str
     path: List[str] = Field(default_factory=list)
-    distance: int = -1
+
+    # 中文：distance 为 None 表示 blocked 或未知
+    # English: distance None means blocked/unknown
+    distance: Optional[int] = None
 
     blocked: Optional[Dict[str, Any]] = None
 
@@ -155,7 +163,7 @@ class MoveOutput(BaseModel):
 
 def _load_snapshot_state(state_file_abs: Optional[str]) -> Dict[str, Any]:
     """
-    中文：读取快照状态，文件不存在则返回 {}
+    中文：读取快照状态；文件不存在则返回 {}
     English: load snapshot; return {} if missing
     """
     if not state_file_abs:
@@ -176,8 +184,8 @@ def _resolve_from_id(inp: MoveInput, snapshot: Dict[str, Any]) -> str:
     中文：优先 inp.from_id；否则取 snapshot["player"]["location"]
     English: prefer inp.from_id; else snapshot["player"]["location"]
     """
-    if inp.from_id:
-        return inp.from_id
+    if inp.from_id and inp.from_id.strip():
+        return inp.from_id.strip()
 
     player = snapshot.get("player")
     if isinstance(player, dict):
@@ -190,8 +198,8 @@ def _resolve_from_id(inp: MoveInput, snapshot: Dict[str, Any]) -> str:
 
 def _merge_rule_state(snapshot: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
     """
-    中文：浅合并 snapshot + override
-    English: shallow merge snapshot + override
+    中文：浅合并 snapshot + override（override 优先）
+    English: shallow merge snapshot + override (override wins)
     """
     merged = dict(snapshot) if isinstance(snapshot, dict) else {}
     for k, v in (override or {}).items():
@@ -210,41 +218,59 @@ def move_impl(inp: MoveInput) -> MoveOutput:
     """
     event_id = secrets.token_hex(8)
 
-    # Resolve paths relative to BASE_DIR
+    # -------------------------
+    # 1) Resolve paths / 解析路径
+    # -------------------------
     map_file_abs = resolve_path(inp.map_file)
     index_file_abs = resolve_path(inp.location_index_file)
-    state_file_abs = resolve_path(inp.state_file)
-    log_file_abs = resolve_path(inp.log_file)
 
-    # Load snapshot (optional)
+    # 中文：persist=true 时，如果用户没传路径，则写到默认目录（state/ logs/）
+    # English: if persist=true and paths not provided, use default state/ logs/ paths
+    state_file_raw = inp.state_file or (DEFAULT_STATE_FILE if inp.persist else None)
+    log_file_raw = inp.log_file or (DEFAULT_LOG_FILE if inp.persist else None)
+
+    state_file_abs = resolve_path(state_file_raw)
+    log_file_abs = resolve_path(log_file_raw)
+
+    # -------------------------
+    # 2) Load snapshot / 读取快照（可选）
+    # -------------------------
     snapshot = _load_snapshot_state(state_file_abs)
 
-    # Resolve start/destination
+    # -------------------------
+    # 3) Resolve from/to / 解析起点终点
+    # -------------------------
     from_id = _resolve_from_id(inp, snapshot)
     to_id = inp.to_id.strip()
 
-    # Load graph
+    # -------------------------
+    # 4) Load graph / 加载地图图结构
+    # -------------------------
     gstore = GraphStore(map_file_abs, enforce_undirected=True)
     graph = gstore.load()
 
-    # ✅ FIX: Graph may not be iterable; use graph_node_ids()
     nodes = graph_node_ids(graph)
     if from_id not in nodes:
         raise ValueError(f"Unknown from_id: {from_id}")
     if to_id not in nodes:
         raise ValueError(f"Unknown to_id: {to_id}")
 
-    # Load location index
+    # -------------------------
+    # 5) Load location index / 加载 location_index
+    # -------------------------
     lindex = LocationIndex(index_file_abs)
 
-    # Merge rule state (snapshot + override)
+    # -------------------------
+    # 6) Merge rule state / 合并规则 state
+    # -------------------------
     rule_state = _merge_rule_state(snapshot, inp.state)
 
-    # Wrap traversal rules
     def _can_traverse(src: str, dst: str, st: Dict[str, Any]):
         return can_traverse_with_index(src, dst, st, index=lindex)
 
-    # Compute path
+    # -------------------------
+    # 7) Pathfinding / 最短路
+    # -------------------------
     res: PathResult = shortest_path_bfs(
         graph=graph,
         start=from_id,
@@ -253,7 +279,9 @@ def move_impl(inp: MoveInput) -> MoveOutput:
         can_traverse=_can_traverse,
     )
 
-    # Build output
+    # -------------------------
+    # 8) Build base output / 构造基础输出
+    # -------------------------
     if res.ok:
         ok = True
         new_location = to_id
@@ -264,7 +292,7 @@ def move_impl(inp: MoveInput) -> MoveOutput:
         ok = False
         new_location = from_id
         path = []
-        distance = -1
+        distance = None
         blocked = blocked_to_dict(res.blocked)
 
     out = MoveOutput(
@@ -278,24 +306,58 @@ def move_impl(inp: MoveInput) -> MoveOutput:
         blocked=blocked,
     )
 
-    # Persist: LOG FIRST -> STATE SECOND
+    def _loc_view(loc_id: str) -> Dict[str, Any]:
+        """
+        中文：根据 location_index.json 生成可展示的地点信息
+        English: Build a display-friendly location object from location_index.json
+        """
+        info = lindex.get(loc_id)  # 你需要在 LocationIndex 提供 get()（或等价方法）
+        if not isinstance(info, dict):
+            info = {}
+        return {
+            "id": loc_id,
+            "name": info.get("name", loc_id),
+            #"zh": info.get("zh", ""),
+            "desc_zh": info.get("desc_zh", ""),
+            "desc_en": info.get("desc_en", ""),
+        }
+
+
+    # ============================================================
+    # 9) Persist: LOG FIRST -> STATE SECOND
+    #    持久化：先写日志 -> 再写快照
+    # ============================================================
     if inp.persist:
         if not state_file_abs or not log_file_abs:
-            raise ValueError("persist=true requires both state_file and log_file.")
+            # 理论上不会触发：persist 时已提供默认值
+            raise ValueError("persist=true requires state_file/log_file (or defaults).")
 
         store = StateStore(state_file_abs)
-        elog = EventLog(log_file_abs, timezone_str=inp.timezone_str)
+        elog = EventLog(log_file_abs, timezone_str=inp.timezone_str or "UTC")
 
         current_state = store.load()
         version_before = int(current_state.get("version") or 0)
-        version_after = version_before + 1
+        # 中文：无论 ok 与否，事件日志依然记录；但只有 ok 才真正改变位置
+        # English: always log event; only update location when ok==True
+        version_after = version_before + (1 if ok else 0)
 
-        patch = [
-            {"op": "replace", "path": "/player/location", "value": new_location},
-            {"op": "replace", "path": "/version", "value": version_after},
-            {"op": "replace", "path": "/last_event_id", "value": event_id},
-        ]
+        # 中文：构造 patch（用于回放/审计）；blocked 时 patch 为空也可以
+        # English: patch for replay/audit; for blocked you can keep it empty
+        patch: List[Dict[str, Any]] = []
+ #       if ok:
+  #          patch = [
+  #              {"op": "replace", "path": "/player/location", "value": new_location},
+  #          ]
+      #  patch = []
+        if ok:
+            patch = [
+                {"op": "replace", "path": "/player/location_id", "value": new_location},
+                {"op": "replace", "path": "/player/location", "value": _loc_view(new_location)},
+            ]
 
+        # -------------------------
+        # 9.1) LOG FIRST / 先写日志
+        # -------------------------
         persisted_log = elog.append_move_event(
             event_id=event_id,
             actor="orchestrator",
@@ -303,29 +365,47 @@ def move_impl(inp: MoveInput) -> MoveOutput:
             to_id=to_id,
             ok=ok,
             path=(res.path if res.ok else []),
-            distance=(res.distance if res.ok else -1),
-            reason_code=(res.blocked.reason_code if (not res.ok and res.blocked) else None),
-            message=(res.blocked.message if (not res.ok and res.blocked) else None),
+            distance=(res.distance if res.ok else None),
+            blocked=blocked,
             patch=patch,
             state_version_before=version_before,
             state_version_after=version_after,
-        )
-
-        def patch_fn(before: Dict[str, Any]) -> Dict[str, Any]:
-            after = dict(before)
-            player = dict(after.get("player") or {})
-            player["location"] = new_location
-            after["player"] = player
-            return after
-
-        update_result = store.apply_update(
-            patch_fn=patch_fn,
-            event_id=event_id,
-            bump_version=True,
+            meta={"persist": True},
         )
 
         out.persisted_log = persisted_log
-        out.persisted_state = update_result.after
+
+        # -------------------------
+        # 9.2) STATE SECOND / 再写快照
+        # -------------------------
+        if ok:
+            def patch_fn(before: Dict[str, Any]) -> Dict[str, Any]:
+                """
+                中文：更新 player 的 location_id + location 展示字段
+                English: Update both location_id and display location fields
+                """
+                after = dict(before)
+                player = dict(after.get("player") or {})
+              #  player["location_id"] = new_location
+             #   player["location"] = _loc_view(new_location)
+                 # ✅ keep location id for compatibility with tests
+                player["location"] = new_location
+                # ✅ store enriched view separately
+                player["location_view"] = _loc_view(new_location)
+                after["player"] = player
+                return after
+
+
+            update_result = store.apply_update(
+                patch_fn=patch_fn,
+                event_id=event_id,     # ✅ 用 event_id（或 persisted_log["event_id"]）
+                bump_version=True,     # ✅ ok=True 才 bump version
+            )
+            out.persisted_state = update_result.after
+        else:
+            # 中文：blocked 不更新状态（也不 bump version），但日志仍写入
+            # English: if blocked, do not update snapshot; log still exists
+            out.persisted_state = store.load()
 
     return out
 

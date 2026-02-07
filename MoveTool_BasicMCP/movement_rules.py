@@ -14,10 +14,11 @@
 
 from __future__ import annotations
 
+
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 # -------------------------
@@ -35,59 +36,94 @@ class LocationInfo:
     desc_en: str = ""
 
 
+
 class LocationIndex:
     """
-    中文：读取 location_index.json，并提供 lookup
-    English: Loads location_index.json and provides lookups
+    中文：
+      location_index.json 读取器：
+      - 支持 {"L001": {...}, "L002": {...}} 这种 dict 格式
+      - 也支持 {"locations": {"L001": {...}}} 这种嵌套格式（容错）
+      - 提供 get()/get_name()/get_desc_zh()/get_desc_en() 供规则层使用
+
+    English:
+      Reader for location_index.json:
+      - Supports dict format: {"L001": {...}}
+      - Also supports nested format: {"locations": {...}} (tolerant)
+      - Provides get()/get_name()/get_desc_zh()/get_desc_en() for rule layer
     """
 
     def __init__(self, index_file: str | Path) -> None:
         self.index_file = Path(index_file)
-        self._cache: Optional[Dict[str, LocationInfo]] = None
+        self._data: Dict[str, Dict[str, Any]] = {}
+        self._load()
 
-    def load(self) -> Dict[str, LocationInfo]:
+    def _load(self) -> None:
         """
-        中文：加载索引（带缓存）
-        English: Load index (cached)
+        中文：加载 index_file；不存在则使用空表
+        English: Load index file; fallback to empty
         """
-        if self._cache is not None:
-            return self._cache
+        if not self.index_file.exists():
+            self._data = {}
+            return
 
-        raw = json.loads(self.index_file.read_text(encoding="utf-8"))
-        if not isinstance(raw, dict):
-            raise ValueError("location_index.json must be a dict/object.")
+        raw = self.index_file.read_text(encoding="utf-8").strip()
+        if not raw:
+            self._data = {}
+            return
 
-        out: Dict[str, LocationInfo] = {}
-        for loc_id, payload in raw.items():
-            if not isinstance(payload, dict):
-                continue
-            out[str(loc_id)] = LocationInfo(
-                name=str(payload.get("name", loc_id)),
-                desc_zh=str(payload.get("desc_zh", "") or ""),
-                desc_en=str(payload.get("desc_en", "") or ""),
-            )
+        obj = json.loads(raw)
+        if isinstance(obj, dict):
+            # 容错：如果顶层是 {"locations": {...}}
+            if "locations" in obj and isinstance(obj["locations"], dict):
+                obj = obj["locations"]
 
-        self._cache = out
-        return out
+            # 只保留 value 是 dict 的条目
+            out: Dict[str, Dict[str, Any]] = {}
+            for k, v in obj.items():
+                if isinstance(v, dict):
+                    out[str(k)] = v
+            self._data = out
+            return
+
+        # 其他结构直接忽略
+        self._data = {}
+
+    def get(self, loc_id: str) -> Optional[Dict[str, Any]]:
+        """
+        中文：获取地点信息 dict；没有则返回 None
+        English: Get location record dict; None if missing
+        """
+        return self._data.get(str(loc_id))
 
     def get_name(self, loc_id: str) -> str:
         """
-        中文：取英文地点名（找不到则回退到 loc_id）
-        English: Get English name (fallback to loc_id)
+        中文：获取地点名称；没有则返回 loc_id 本身
+        English: Get location name; fallback to loc_id
         """
-        data = self.load()
-        info = data.get(loc_id)
-        return info.name if info else loc_id
+        rec = self.get(loc_id) or {}
+        name = rec.get("name") or rec.get("title")
+        if isinstance(name, str) and name.strip():
+            return name.strip()
+        return str(loc_id)
 
     def get_desc_zh(self, loc_id: str) -> str:
-        data = self.load()
-        info = data.get(loc_id)
-        return info.desc_zh if info else ""
+        """
+        中文：获取中文描述；没有则返回空串
+        English: Get Chinese description; fallback empty
+        """
+        rec = self.get(loc_id) or {}
+        v = rec.get("desc_zh") or rec.get("zh") or ""
+        return v.strip() if isinstance(v, str) else ""
 
     def get_desc_en(self, loc_id: str) -> str:
-        data = self.load()
-        info = data.get(loc_id)
-        return info.desc_en if info else ""
+        """
+        中文：获取英文描述；没有则返回空串
+        English: Get English description; fallback empty
+        """
+        rec = self.get(loc_id) or {}
+        v = rec.get("desc_en") or rec.get("en") or ""
+        return v.strip() if isinstance(v, str) else ""
+
 
 
 # -------------------------
@@ -106,6 +142,35 @@ class Blocked:
     # 中文：额外增强字段（不影响旧逻辑；server.py 转 dict 时可选择带上）
     # English: extra enriched fields (optional)
     meta: Optional[Dict[str, Any]] = None
+
+def get_name(self, loc_id: str) -> str:
+    """
+    中文：获取地点英文名/名称；不存在则返回 loc_id
+    English: Get location name; fallback to loc_id
+    """
+    rec = self.get(loc_id) or {}
+    name = rec.get("name")
+    return name if isinstance(name, str) and name.strip() else loc_id
+
+
+def get_desc_zh(self, loc_id: str) -> str:
+    """
+    中文：获取地点中文描述；不存在返回空串
+    English: Get Chinese description; fallback empty string
+    """
+    rec = self.get(loc_id) or {}
+    v = rec.get("desc_zh") or rec.get("zh") or ""
+    return v if isinstance(v, str) else ""
+
+
+def get_desc_en(self, loc_id: str) -> str:
+    """
+    中文：获取地点英文描述；不存在返回空串
+    English: Get English description; fallback empty string
+    """
+    rec = self.get(loc_id) or {}
+    v = rec.get("desc_en") or rec.get("en") or ""
+    return v if isinstance(v, str) else ""
 
 
 def _mk_blocked(

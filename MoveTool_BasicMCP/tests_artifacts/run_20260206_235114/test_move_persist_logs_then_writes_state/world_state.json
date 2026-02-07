@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "player": {
+    "location": {
+      "id": "A02",
+      "name": "A02",
+      "desc_zh": "",
+      "desc_en": ""
+    },
+    "location_id": "A02"
+  },
+  "last_event_id": "1b5a114206afa1e3"
+}

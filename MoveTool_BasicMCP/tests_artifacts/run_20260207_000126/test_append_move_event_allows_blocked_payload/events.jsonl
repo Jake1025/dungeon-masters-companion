@@ -1,0 +1,1 @@
+{"event_id": "evt_blocked_1", "ts": "2026-02-07T05:01:26+00:00", "type": "move", "actor": "player", "payload": {"from": "A00", "to": "B03", "ok": false, "path": [], "distance": null, "blocked": {"reason_code": "unreachable", "message": "No path", "at": "A00->B03"}}, "patch": [], "meta": {"rule": "blocked"}, "state_version_before": 0, "state_version_after": 0}

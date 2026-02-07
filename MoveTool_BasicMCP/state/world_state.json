@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "player": {
+    "location": "L022",
+    "location_view": {
+      "id": "L022",
+      "name": "Storeroom Door",
+      "desc_zh": "库门紧闭，另有乾坤",
+      "desc_en": "A closed storeroom door hiding unknown contents."
+    }
+  },
+  "last_event_id": "3880dba947c40dda"
+}
