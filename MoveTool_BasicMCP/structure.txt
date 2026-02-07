@@ -5,6 +5,7 @@ MoveTool_BasicMCP/
 ├─ movement_rules.py          # 确定性规则校验
 ├─ state_store.py             # 读写“当前状态 JSON”
 ├─ movement_logger.py         # 写 JSONL 移动日志
+├─ event_log.py
 ├─ types.py                   # Pydantic 输入输出
 ├─ data/
 │   ├─ map.json               # 地图（节点+连接）

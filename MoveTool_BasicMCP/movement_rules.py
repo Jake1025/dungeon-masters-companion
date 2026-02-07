@@ -265,11 +265,17 @@ def blocked_to_dict(blocked: Optional[Blocked]) -> Optional[Dict[str, Any]]:
     """
     if blocked is None:
         return None
+
     d = {
         "reason_code": blocked.reason_code,
         "message": blocked.message,
         "at": blocked.at,
     }
-    if blocked.meta is not None:
-        d["meta"] = blocked.meta
+
+    # ✅ 兼容：Blocked 可能没有 meta 字段
+    # ✅ Compatibility: Blocked may not have "meta"
+    meta = getattr(blocked, "meta", None)
+    if meta is not None:
+        d["meta"] = meta
+
     return d

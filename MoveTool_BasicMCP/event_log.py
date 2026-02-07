@@ -23,13 +23,22 @@ from typing import Any, Dict, List, Optional
 from zoneinfo import ZoneInfo
 
 
-def now_iso(timezone_str: str = "America/New_York") -> str:
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
+def now_iso(timezone_str: str = "UTC") -> str:
     """
-    中文：带时区 ISO 时间戳
-    English: ISO timestamp with timezone
+    中文：返回当前时间的 ISO 字符串。优先使用 IANA 时区；
+          如果系统缺少 tzdata 或找不到时区，则退化为 UTC。
+    English: Return ISO timestamp. Prefer IANA tz; fallback to UTC if tz missing.
     """
-    tz = ZoneInfo(timezone_str)
-    return datetime.now(tz).isoformat(timespec="seconds")
+    try:
+        tz = ZoneInfo(timezone_str)
+        return datetime.now(tz).isoformat(timespec="seconds")
+    except Exception:
+        # Fallback to UTC to avoid crashing
+        return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
 
 
 def append_jsonl(path: str | Path, obj: Dict[str, Any]) -> None:

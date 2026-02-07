@@ -1,0 +1,112 @@
+{
+  "L001": {
+    "name": "Town Square",
+    "desc_zh": "市镇核心，人来人往",
+    "desc_en": "The central square of the town, bustling with daily activity."
+  },
+  "L002": {
+    "name": "Market Stalls",
+    "desc_zh": "商贩云集，叫卖喧哗",
+    "desc_en": "A cluster of market stalls filled with merchants and customers."
+  },
+  "L003": {
+    "name": "Temple of the Tide",
+    "desc_zh": "潮汐圣所，静谧肃穆",
+    "desc_en": "A serene temple dedicated to the tides and the sea."
+  },
+  "L004": {
+    "name": "Town Hall",
+    "desc_zh": "政务中枢，文书往来",
+    "desc_en": "The administrative heart of the town."
+  },
+  "L005": {
+    "name": "Harbor Gate",
+    "desc_zh": "港口关隘，出入要道",
+    "desc_en": "The guarded gate controlling access to the harbor."
+  },
+  "L006": {
+    "name": "Docks",
+    "desc_zh": "舟楫往返，咸风扑面",
+    "desc_en": "Busy docks where ships arrive and depart."
+  },
+  "L007": {
+    "name": "Warehouse Row",
+    "desc_zh": "库房林立，暗流潜藏",
+    "desc_en": "A row of warehouses storing goods and secrets."
+  },
+  "L008": {
+    "name": "Smuggler's Entrance",
+    "desc_zh": "暗门隐蔽，行踪诡秘",
+    "desc_en": "A concealed entrance used by smugglers."
+  },
+  "L009": {
+    "name": "Old Well",
+    "desc_zh": "残井幽深，流言四起",
+    "desc_en": "An old well surrounded by rumors and whispers."
+  },
+  "L010": {
+    "name": "Watch Barracks",
+    "desc_zh": "守军驻地，戒备森严",
+    "desc_en": "Barracks housing the town watch."
+  },
+  "L011": {
+    "name": "East Alley",
+    "desc_zh": "巷道狭长，鱼龙混杂",
+    "desc_en": "A narrow alley known for shady dealings."
+  },
+  "L012": {
+    "name": "Back Door - Copper Cup",
+    "desc_zh": "后门僻静，暗通酒馆",
+    "desc_en": "A discreet back entrance to the Copper Cup tavern."
+  },
+  "L013": {
+    "name": "Old Shrine",
+    "desc_zh": "古祠残破，香火未绝",
+    "desc_en": "An old, partially abandoned shrine."
+  },
+  "L014": {
+    "name": "South Bridge",
+    "desc_zh": "南向石桥，横跨水道",
+    "desc_en": "A stone bridge spanning the southern river."
+  },
+  "L015": {
+    "name": "Riverside Path",
+    "desc_zh": "沿河小径，水声相伴",
+    "desc_en": "A quiet path following the riverbank."
+  },
+  "L016": {
+    "name": "Fishermen's Shacks",
+    "desc_zh": "渔棚散落，烟火人家",
+    "desc_en": "Simple shacks where fishermen live and work."
+  },
+  "L017": {
+    "name": "Lumberyard",
+    "desc_zh": "木料堆积，斧声不断",
+    "desc_en": "A yard stacked with timber and tools."
+  },
+  "L018": {
+    "name": "Wizard's House",
+    "desc_zh": "法师居所，异象频生",
+    "desc_en": "The residence of the town wizard, filled with arcane signs."
+  },
+  "L019": {
+    "name": "Copper Cup",
+    "desc_zh": "酒气弥漫，人声鼎沸",
+    "desc_en": "A lively tavern popular with locals."
+  },
+  "L020": {
+    "name": "Bar Counter",
+    "desc_zh": "吧台一隅，耳目集中",
+    "desc_en": "The main bar counter inside the tavern."
+  },
+  "L021": {
+    "name": "Stair Landing",
+    "desc_zh": "楼梯平台，上下交汇",
+    "desc_en": "A small landing connecting floors."
+  },
+  "L022": {
+    "name": "Storeroom Door",
+    "desc_zh": "库门紧闭，另有乾坤",
+    "desc_en": "A closed storeroom door hiding unknown contents."
+  }
+}
