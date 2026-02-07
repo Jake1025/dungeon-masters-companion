@@ -19,6 +19,10 @@ import json
 import secrets
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+# 中文：引入新的状态存储与事件日志模块
+# English: Import the new state snapshot store and append-only event log
+from state_store import StateStore
+from event_log import EventLog
 
 from pydantic import BaseModel, Field
 
@@ -243,43 +247,74 @@ def move_impl(inp: MoveInput) -> MoveOutput:
 
     # ---------- Optional persistence ----------
     if inp.persist:
+        # 中文：persist=true 需要同时提供 state_file 与 log_file
+        # English: persist=true requires both state_file and log_file
         if not inp.state_file or not inp.log_file:
             raise ValueError("persist=true requires both state_file and log_file.")
 
-        # Update state snapshot (overwrite)
-        persisted_state = dict(state)
-        player = dict(persisted_state.get("player") or {})
-        player["location"] = new_location
-        persisted_state["player"] = player
+        # 中文：初始化状态存储与事件日志（JSONL）
+        # English: Initialize snapshot store and event log (JSONL)
+        store = StateStore(inp.state_file)
+        elog = EventLog(inp.log_file, timezone_str=inp.timezone_str)
 
-        # versioning (optional but recommended)
-        before_version = int(persisted_state.get("version") or 0)
-        after_version = before_version + 1
-        persisted_state["version"] = after_version
-        persisted_state["last_event_id"] = event_id
+        # 中文：读取“当前快照”，以便记录 version_before，并决定 from_id（如果你依赖 state_file）
+        # English: Load current snapshot to capture version_before (and possibly source location)
+        current_state = store.load()
+        version_before = int(current_state.get("version") or 0)
+        version_after = version_before + 1  # 我们默认每次持久化都 bump version
 
-        atomic_write_json(inp.state_file, persisted_state)
+        # 中文：准备写入事件日志（先写 log，再写 state）
+        # English: Prepare event log entry (log first, then state)
+        path_used = res.path if ok else []
+        distance_used = res.distance if ok else -1
+        reason_code = res.blocked.reason_code if (not ok and res.blocked) else None
+        message = res.blocked.message if (not ok and res.blocked) else None
 
-        # Append movement log (jsonl)
-        persisted_log = log_move(
-            inp.log_file,
+        # 中文：可选 patch（JSON Patch 风格），用于回放/审计/统计
+        # English: Optional patch (JSON Patch style) for replay/audit/analytics
+        patch = [
+            {"op": "replace", "path": "/player/location", "value": new_location},
+            {"op": "replace", "path": "/version", "value": version_after},
+            {"op": "replace", "path": "/last_event_id", "value": event_id},
+        ]
+
+        # 1) 先写入 JSONL 事件日志
+        # 1) Append JSONL event log first
+        persisted_log = elog.append_move_event(
             event_id=event_id,
+            actor="orchestrator",  # 中文：你也可以改成 "tool" 或传参进来
             from_id=from_id,
             to_id=to_id,
             ok=ok,
-            path=(res.path if ok else []),
-            distance=(res.distance if ok else -1),
-            timezone_str=inp.timezone_str,
-            reason_code=(res.blocked.reason_code if (not ok and res.blocked) else None),
-            message=(res.blocked.message if (not ok and res.blocked) else None),
-            state_version_before=before_version,
-            state_version_after=after_version,
+            path=path_used,
+            distance=distance_used,
+            reason_code=reason_code,
+            message=message,
+            patch=patch,
+            state_version_before=version_before,
+            state_version_after=version_after,
         )
 
-        out.persisted_state = persisted_state
-        out.persisted_log = persisted_log
+        # 2) 再覆盖写 state 快照（原子写）
+        # 2) Overwrite snapshot state after logging (atomic)
+        def patch_fn(before: dict) -> dict:
+            after = dict(before)
+            player = dict(after.get("player") or {})
+            player["location"] = new_location
+            after["player"] = player
+            # 中文：version 与 last_event_id 在 apply_update 内会设置，这里不必重复写也可以
+            # English: version/last_event_id can be set by apply_update; safe either way
+            return after
 
-    return out
+        update_result = store.apply_update(
+            patch_fn=patch_fn,
+            event_id=event_id,
+            bump_version=True,
+        )
+
+        out.persisted_log = persisted_log
+        out.persisted_state = update_result.after
+
 
 
 # ----------------------------
