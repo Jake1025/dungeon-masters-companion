@@ -20,7 +20,9 @@ class History:
         self._add("narrator", text)
 
     def recent(self, limit: int | None = None) -> Sequence[Tuple[str, str]]:
-        lim = limit or self.max_turns
+        lim = limit if limit is not None else self.max_turns
+        if lim is None:
+            return self.turns
         return self.turns[-lim:]
 
     def as_text(self, limit: int | None = None) -> str:

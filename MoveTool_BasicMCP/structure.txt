@@ -1,0 +1,16 @@
+MoveTool_BasicMCP/
+├─ server.py                  # MCP tool（move / can_move / shortest_path）
+├─ graph_store.py             # 读取地图 JSON
+├─ pathfinding.py             # BFS / Dijkstra（纯算法）
+├─ movement_rules.py          # 确定性规则校验
+├─ state_store.py             # 读写“当前状态 JSON”
+├─ movement_logger.py         # 写 JSONL 移动日志
+├─ types.py                   # Pydantic 输入输出
+├─ data/
+│   ├─ map.json               # 地图（节点+连接）
+│   └─ location_index.json    # node_id -> name（可选拆分）
+├─ state/
+│   └─ world_state.json       # 当前世界状态（玩家位置等）
+├─ logs/
+│   └─ movement_log.jsonl     # 每一步移动记录
+└─ test_move_tool.py
