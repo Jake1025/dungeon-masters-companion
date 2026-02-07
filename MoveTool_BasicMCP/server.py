@@ -1,309 +1,294 @@
 # server.py
 # ============================================================
 # 中文：
-#   MCP Tool：人物移动（move/can_move/shortest_path）
-#   - 地图：JSON（只读）
-#   - 状态：JSON（覆盖写，可选 persist）
-#   - 日志：JSONL（追加写，可选 persist）
+#   Move MCP Tool Server（人物移动）
+#   - 读取 map.json（地点图）
+#   - 根据 from/to 计算最短路径（BFS）
+#   - 接入 location_index.json（用于更友好的阻断信息与叙事提示）
+#   - 可选持久化：严格“先写事件日志(JSONL) -> 再覆盖写状态快照(JSON)”
 #
 # English:
-#   MCP tool for movement (move/can_move/shortest_path)
-#   - Map: read-only JSON
-#   - State: overwrite JSON snapshot (optional persist)
-#   - Log: append-only JSONL (optional persist)
+#   Move MCP Tool Server (character movement)
+#   - Load map.json (location graph)
+#   - Compute shortest path (BFS)
+#   - Integrate location_index.json (better blocked messages / narration hints)
+#   - Optional persistence: strictly "log first (JSONL) -> then snapshot state overwrite (JSON)"
 # ============================================================
 
 from __future__ import annotations
 
-import json
 import secrets
 from pathlib import Path
-from typing import Any, Dict, List, Optional
-# 中文：引入新的状态存储与事件日志模块
-# English: Import the new state snapshot store and append-only event log
-from state_store import StateStore
-from event_log import EventLog
+from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
 try:
+    # 中文：优先使用官方 FastMCP（更省样板代码）
+    # English: Prefer official FastMCP helper if available
     from mcp.server.fastmcp import FastMCP
     fastmcp_available = True
 except Exception:
     fastmcp_available = False
     from mcp.server import Server
 
+# ---------- Internal modules / 内部模块 ----------
 from graph_store import GraphStore
 from pathfinding import shortest_path_bfs, PathResult
-from movement_logger import log_move
+from movement_rules import LocationIndex, can_traverse_with_index, blocked_to_dict
+from state_store import StateStore
+from event_log import EventLog
 
 
-# ----------------------------
-# State IO helpers / 状态读写辅助
-# ----------------------------
-
-def read_json(path: str | Path) -> Dict[str, Any]:
-    """
-    中文：读取 JSON，若文件不存在返回空 dict
-    English: Read JSON; return {} if missing
-    """
-    p = Path(path)
-    if not p.exists():
-        return {}
-    return json.loads(p.read_text(encoding="utf-8"))
-
-
-def atomic_write_json(path: str | Path, obj: Dict[str, Any]) -> None:
-    """
-    中文：原子覆盖写 JSON（避免写一半崩溃导致文件损坏）
-    English: Atomic overwrite write for JSON to avoid partial corruption
-    """
-    p = Path(path)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_suffix(p.suffix + ".tmp")
-    tmp.write_text(json.dumps(obj, ensure_ascii=False, indent=2), encoding="utf-8")
-    tmp.replace(p)
-
-
-# ----------------------------
-# MCP models / 输入输出模型
-# ----------------------------
-
-class CanMoveInput(BaseModel):
-    map_file: str = Field(description="Path to map.json")
-    from_id: str = Field(description="Current location node id")
-    to_id: str = Field(description="Target location node id")
-    state: Dict[str, Any] = Field(default_factory=dict, description="World/player state (rules input)")
-
-
-class ShortestPathInput(BaseModel):
-    map_file: str = Field(description="Path to map.json")
-    from_id: str = Field(description="Start node id")
-    to_id: str = Field(description="Goal node id")
-    state: Dict[str, Any] = Field(default_factory=dict, description="World/player state (rules input)")
-
+# ============================================================
+# MCP Tool Schemas / 工具输入输出
+# ============================================================
 
 class MoveInput(BaseModel):
+    """
+    中文：移动输入
+    English: Movement input
+    """
     map_file: str = Field(description="Path to map.json")
+    location_index_file: str = Field(
+        default="data/location_index.json",
+        description="Path to location_index.json (for enriched messages)"
+    )
 
-    # 中文：如果你们由 orchestrator 传 from/to，就用它；
-    #      如果你想从 state_file 自动读当前位置，也可以传 state_file+persist。
-    # English: Use explicit from/to, or optionally load from state_file when persisting.
-    from_id: Optional[str] = Field(default=None, description="Current location (optional if using state_file)")
-    to_id: str = Field(description="Target location node id")
+    # 中文：可选显式指定起点；不填则尝试从 state_file 的 player.location 读取
+    # English: Optional explicit from_id; if omitted, read from state_file player.location
+    from_id: Optional[str] = Field(default=None, description="Start location id (e.g., L001)")
+    to_id: str = Field(description="Destination location id (e.g., L022)")
 
-    # 中文：状态可以直接传入（推荐：orchestrator 控制）；也可用 state_file 读取
-    # English: Pass state directly (recommended) or load from state_file
-    state: Dict[str, Any] = Field(default_factory=dict, description="World/player state (rules input)")
+    # 中文：规则状态（锁/封锁/库存等），会覆盖 state_file 中的 rules/fields
+    # English: Rule state (locks/blocks/inventory), overlays on top of snapshot state
+    state: Dict[str, Any] = Field(default_factory=dict, description="Rule state dict")
 
-    # 中文：持久化选项：写状态快照与日志（可选）
-    # English: Persistence options: overwrite state snapshot + append log (optional)
-    persist: bool = Field(default=False, description="If true, write state_file and log_file")
-    state_file: Optional[str] = Field(default=None, description="Path to world_state.json (overwrite)")
-    log_file: Optional[str] = Field(default=None, description="Path to movement_log.jsonl (append)")
+    # 中文：是否持久化（先写 log 再写 state）
+    # English: Whether to persist (log first, then state)
+    persist: bool = Field(default=False)
 
-    timezone_str: str = Field(default="America/New_York", description="Timezone for timestamp/logging")
+    # 中文：持久化路径
+    # English: Persistence paths
+    state_file: Optional[str] = Field(default=None, description="Path to world_state.json (snapshot)")
+    log_file: Optional[str] = Field(default=None, description="Path to state_events.jsonl (append-only)")
+
+    timezone_str: str = Field(default="America/New_York", description="Timezone for event timestamps")
 
 
 class MoveOutput(BaseModel):
+    """
+    中文：移动输出
+    English: Movement output
+    """
     ok: bool
+    event_id: str
+
     from_id: str
     to_id: str
-    path: List[str]
-    distance: int
+
+    new_location: str
+    path: List[str] = Field(default_factory=list)
+    distance: int = -1
+
+    # 中文：若失败，blocked 给出原因与“带 index”的提示信息
+    # English: On failure, blocked explains the reason with enriched info
     blocked: Optional[Dict[str, Any]] = None
 
-    # 中文：建议的新位置（通常等于 to_id，失败则为原地）
-    # English: Recommended new location (usually equals to_id; unchanged if failed)
-    new_location: str
-
-    # 中文：用于关联日志/请求
-    # English: Request/event id for tracing
-    event_id: str
-    request_id: str
-
-    # 中文：可选：如果 persist=true，返回写入的日志条目
-    # English: optional: return persisted log entry when persist=true
+    # 中文：持久化的回显（可选）
+    # English: Persistence echoes (optional)
     persisted_log: Optional[Dict[str, Any]] = None
-
-    # 中文：可选：如果 persist=true，返回更新后的 state 快照
-    # English: optional: updated state snapshot when persist=true
     persisted_state: Optional[Dict[str, Any]] = None
 
 
-# ----------------------------
-# Core functions / 核心逻辑
-# ----------------------------
+# ============================================================
+# Helpers / 辅助函数
+# ============================================================
 
-def _load_graph(map_file: str):
-    store = GraphStore(map_file, enforce_undirected=True)
-    return store.load()
-
-
-def _ensure_nodes(graph, from_id: str, to_id: str) -> None:
-    if not graph.has_node(from_id):
-        raise ValueError(f"Unknown from_id: {from_id}")
-    if not graph.has_node(to_id):
-        raise ValueError(f"Unknown to_id: {to_id}")
-
-
-def _blocked_to_dict(blocked) -> Optional[Dict[str, Any]]:
-    if blocked is None:
-        return None
-    return {
-        "reason_code": blocked.reason_code,
-        "message": blocked.message,
-        "at": blocked.at,
-    }
+def _load_snapshot_state(state_file: Optional[str]) -> Dict[str, Any]:
+    """
+    中文：读取快照状态（world_state.json），文件不存在则返回空 dict
+    English: Load snapshot state; return {} if missing
+    """
+    if not state_file:
+        return {}
+    p = Path(state_file)
+    if not p.exists():
+        return {}
+    import json
+    text = p.read_text(encoding="utf-8").strip()
+    if not text:
+        return {}
+    obj = json.loads(text)
+    return obj if isinstance(obj, dict) else {}
 
 
-def can_move_impl(map_file: str, from_id: str, to_id: str, state: Dict[str, Any]) -> MoveOutput:
-    graph = _load_graph(map_file)
-    _ensure_nodes(graph, from_id, to_id)
+def _resolve_from_id(inp: MoveInput, snapshot: Dict[str, Any]) -> str:
+    """
+    中文：
+      解析起点：
+      - 优先使用 inp.from_id
+      - 否则尝试 snapshot["player"]["location"]
+    English:
+      Resolve starting location:
+      - prefer inp.from_id
+      - else snapshot["player"]["location"]
+    """
+    if inp.from_id:
+        return inp.from_id
 
-    event_id = secrets.token_hex(8)
-    request_id = secrets.token_hex(8)
+    player = snapshot.get("player")
+    if isinstance(player, dict):
+        loc = player.get("location")
+        if isinstance(loc, str) and loc.strip():
+            return loc.strip()
 
-    res = shortest_path_bfs(graph, from_id, to_id, state=state)
-
-    if res.ok:
-        return MoveOutput(
-            ok=True,
-            from_id=from_id,
-            to_id=to_id,
-            path=res.path,
-            distance=res.distance,
-            blocked=None,
-            new_location=to_id,
-            event_id=event_id,
-            request_id=request_id,
-        )
-
-    return MoveOutput(
-        ok=False,
-        from_id=from_id,
-        to_id=to_id,
-        path=[],
-        distance=-1,
-        blocked=_blocked_to_dict(res.blocked),
-        new_location=from_id,
-        event_id=event_id,
-        request_id=request_id,
-    )
+    raise ValueError("from_id is required (or state_file must contain player.location).")
 
 
-def shortest_path_impl(map_file: str, from_id: str, to_id: str, state: Dict[str, Any]) -> MoveOutput:
-    # 中文：为了统一输出结构，我们复用 MoveOutput（ok/path/distance/blocked）
-    # English: Reuse MoveOutput for consistent schema
-    return can_move_impl(map_file, from_id, to_id, state)
+def _merge_rule_state(snapshot: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    中文：
+      合并规则状态：
+      - 以 snapshot 为基础（尤其是 player.inventory / inventory）
+      - 用 override 覆盖同名字段
+      注意：这里做浅合并即可（复杂结构你们后续可扩展成深合并）。
+    English:
+      Merge rule state:
+      - base from snapshot (especially inventory)
+      - overlay with override (shallow merge)
+    """
+    base = dict(snapshot) if isinstance(snapshot, dict) else {}
+    merged = dict(base)
+    for k, v in (override or {}).items():
+        merged[k] = v
+    return merged
 
+
+# ============================================================
+# Core move implementation / 移动核心逻辑
+# ============================================================
 
 def move_impl(inp: MoveInput) -> MoveOutput:
-    graph = _load_graph(inp.map_file)
+    """
+    中文：同步实现（FastMCP / 低层 Server 都能用）
+    English: Sync implementation (works for FastMCP or low-level Server)
+    """
 
-    # ---------- Load state if persisting and state_file provided ----------
-    state = dict(inp.state or {})
-    loaded_state: Dict[str, Any] = {}
-
-    if inp.persist and inp.state_file:
-        loaded_state = read_json(inp.state_file)
-        # 中文：合并策略：input.state 覆盖 state_file 的同名键（你也可以反过来）
-        # English: Merge: input.state overrides loaded_state
-        merged = dict(loaded_state)
-        merged.update(state)
-        state = merged
-
-    # Determine from_id
-    from_id = inp.from_id
-    if from_id is None:
-        # 中文：若没显式给 from_id，尝试从 state 里取 player.location
-        # English: If from_id not provided, try reading player.location from state
-        from_id = (state.get("player") or {}).get("location")
-    if not from_id:
-        raise ValueError("from_id is required, or state.player.location must exist when from_id is omitted.")
-
-    to_id = inp.to_id
-    _ensure_nodes(graph, from_id, to_id)
-
+    # 事件 ID（用于 log 与 state 的一致性）
+    # Event id (used for log/state consistency)
     event_id = secrets.token_hex(8)
-    request_id = secrets.token_hex(8)
 
-    res: PathResult = shortest_path_bfs(graph, from_id, to_id, state=state)
+    # 1) Load snapshot (optional) / 读取快照（可选）
+    snapshot = _load_snapshot_state(inp.state_file)
 
-    # Compute output
-    ok = res.ok
-    new_location = to_id if ok else from_id
-    out = MoveOutput(
-        ok=ok,
-        from_id=from_id,
-        to_id=to_id,
-        path=res.path if ok else [],
-        distance=res.distance if ok else -1,
-        blocked=_blocked_to_dict(res.blocked) if not ok else None,
-        new_location=new_location,
-        event_id=event_id,
-        request_id=request_id,
+    # 2) Resolve from/to / 解析起点终点
+    from_id = _resolve_from_id(inp, snapshot)
+    to_id = inp.to_id.strip()
+
+    # 3) Load map graph / 加载地图图结构
+    gstore = GraphStore(inp.map_file, enforce_undirected=True)
+    graph = gstore.load()
+
+    if from_id not in graph:
+        raise ValueError(f"Unknown from_id: {from_id}")
+    if to_id not in graph:
+        raise ValueError(f"Unknown to_id: {to_id}")
+
+    # 4) Load location index / 加载地点索引（用于更友好提示）
+    lindex = LocationIndex(inp.location_index_file)
+
+    # 5) Merge rule state / 合并规则状态（snapshot + input override）
+    rule_state = _merge_rule_state(snapshot, inp.state)
+
+    # 6) Shortest path with rules / 使用规则计算最短路
+    # 中文：把 can_traverse_with_index 包装成 BFS 需要的函数签名
+    # English: wrap can_traverse_with_index into BFS signature
+    def _can_traverse(src: str, dst: str, st: Dict[str, Any]):
+        return can_traverse_with_index(src, dst, st, index=lindex)
+
+    res: PathResult = shortest_path_bfs(
+        graph=graph,
+        start=from_id,
+        goal=to_id,
+        state=rule_state,
+        can_traverse=_can_traverse,
     )
 
-    # ---------- Optional persistence ----------
+    # 7) Build output / 构造输出
+    if res.ok:
+        ok = True
+        path = res.path
+        distance = res.distance
+        new_location = to_id
+        blocked = None
+    else:
+        ok = False
+        path = []
+        distance = -1
+        new_location = from_id
+        blocked = blocked_to_dict(res.blocked)
+
+    out = MoveOutput(
+        ok=ok,
+        event_id=event_id,
+        from_id=from_id,
+        to_id=to_id,
+        new_location=new_location,
+        path=path,
+        distance=distance,
+        blocked=blocked,
+    )
+
+    # ============================================================
+    # 8) Optional persistence (LOG FIRST -> STATE SECOND)
+    #    可选持久化（严格：先写日志 -> 再写状态）
+    # ============================================================
     if inp.persist:
-        # 中文：persist=true 需要同时提供 state_file 与 log_file
-        # English: persist=true requires both state_file and log_file
         if not inp.state_file or not inp.log_file:
             raise ValueError("persist=true requires both state_file and log_file.")
 
-        # 中文：初始化状态存储与事件日志（JSONL）
-        # English: Initialize snapshot store and event log (JSONL)
         store = StateStore(inp.state_file)
         elog = EventLog(inp.log_file, timezone_str=inp.timezone_str)
 
-        # 中文：读取“当前快照”，以便记录 version_before，并决定 from_id（如果你依赖 state_file）
-        # English: Load current snapshot to capture version_before (and possibly source location)
+        # 读取当前 state 版本（用于记录 event 中的 before/after）
+        # Load current version for version refs in event log
         current_state = store.load()
         version_before = int(current_state.get("version") or 0)
-        version_after = version_before + 1  # 我们默认每次持久化都 bump version
+        version_after = version_before + 1
 
-        # 中文：准备写入事件日志（先写 log，再写 state）
-        # English: Prepare event log entry (log first, then state)
-        path_used = res.path if ok else []
-        distance_used = res.distance if ok else -1
-        reason_code = res.blocked.reason_code if (not ok and res.blocked) else None
-        message = res.blocked.message if (not ok and res.blocked) else None
-
-        # 中文：可选 patch（JSON Patch 风格），用于回放/审计/统计
-        # English: Optional patch (JSON Patch style) for replay/audit/analytics
+        # 生成 patch（JSON Patch 风格，便于回放/审计）
+        # Build patch (JSON Patch style) for replay/audit
         patch = [
             {"op": "replace", "path": "/player/location", "value": new_location},
             {"op": "replace", "path": "/version", "value": version_after},
             {"op": "replace", "path": "/last_event_id", "value": event_id},
         ]
 
-        # 1) 先写入 JSONL 事件日志
-        # 1) Append JSONL event log first
+        # 1) 先写事件日志（即使 state 写失败，也至少保留事件证据）
+        # 1) Write event log first (even if state write fails, the event remains)
         persisted_log = elog.append_move_event(
             event_id=event_id,
-            actor="orchestrator",  # 中文：你也可以改成 "tool" 或传参进来
+            actor="orchestrator",
             from_id=from_id,
             to_id=to_id,
             ok=ok,
-            path=path_used,
-            distance=distance_used,
-            reason_code=reason_code,
-            message=message,
+            path=(res.path if res.ok else []),
+            distance=(res.distance if res.ok else -1),
+            reason_code=(res.blocked.reason_code if (not res.ok and res.blocked) else None),
+            message=(res.blocked.message if (not res.ok and res.blocked) else None),
             patch=patch,
             state_version_before=version_before,
             state_version_after=version_after,
         )
 
-        # 2) 再覆盖写 state 快照（原子写）
-        # 2) Overwrite snapshot state after logging (atomic)
-        def patch_fn(before: dict) -> dict:
+        # 2) 再覆盖写 state 快照（原子写 + bump version + last_event_id）
+        # 2) Overwrite snapshot state (atomic + bump version + last_event_id)
+        def patch_fn(before: Dict[str, Any]) -> Dict[str, Any]:
             after = dict(before)
             player = dict(after.get("player") or {})
             player["location"] = new_location
             after["player"] = player
-            # 中文：version 与 last_event_id 在 apply_update 内会设置，这里不必重复写也可以
-            # English: version/last_event_id can be set by apply_update; safe either way
             return after
 
         update_result = store.apply_update(
@@ -315,44 +300,38 @@ def move_impl(inp: MoveInput) -> MoveOutput:
         out.persisted_log = persisted_log
         out.persisted_state = update_result.after
 
+    return out
 
 
-# ----------------------------
-# MCP tool wiring / MCP 工具注册
-# ----------------------------
+# ============================================================
+# MCP Wiring / MCP 工具注册
+# ============================================================
 
 if fastmcp_available:
     mcp = FastMCP("dm-move")
 
     @mcp.tool()
-    def can_move(input: CanMoveInput) -> MoveOutput:
-        return can_move_impl(input.map_file, input.from_id, input.to_id, input.state)
-
-    @mcp.tool()
-    def shortest_path(input: ShortestPathInput) -> MoveOutput:
-        return shortest_path_impl(input.map_file, input.from_id, input.to_id, input.state)
-
-    @mcp.tool()
     def move(input: MoveInput) -> MoveOutput:
+        """
+        中文：MCP 工具入口（同步）
+        English: MCP tool entry (sync)
+        """
         return move_impl(input)
 
 else:
+    from mcp.types import Tool, CallToolResult  # type: ignore
     mcp = Server("dm-move")
-
-    @mcp.tool("can_move", input_model=CanMoveInput, output_model=MoveOutput)
-    async def can_move(input: CanMoveInput) -> MoveOutput:  # type: ignore
-        return can_move_impl(input.map_file, input.from_id, input.to_id, input.state)
-
-    @mcp.tool("shortest_path", input_model=ShortestPathInput, output_model=MoveOutput)
-    async def shortest_path(input: ShortestPathInput) -> MoveOutput:  # type: ignore
-        return shortest_path_impl(input.map_file, input.from_id, input.to_id, input.state)
 
     @mcp.tool("move", input_model=MoveInput, output_model=MoveOutput)
     async def move(input: MoveInput) -> MoveOutput:  # type: ignore
+        """
+        中文：MCP 工具入口（异步包装）
+        English: MCP tool entry (async wrapper)
+        """
         return move_impl(input)
 
 
 if __name__ == "__main__":
     # 中文：stdio 模式运行（Claude Desktop / MCP Inspector）
-    # English: run over stdio (Claude Desktop / MCP Inspector)
+    # English: run via stdio (Claude Desktop / MCP Inspector)
     mcp.run()

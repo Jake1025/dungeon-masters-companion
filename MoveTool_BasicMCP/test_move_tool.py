@@ -151,27 +151,43 @@ def test_blocked_edge_rule(map_file: Path):
     assert out.blocked["reason_code"] in {"edge_blocked", "unreachable"}
 
 
-def test_move_persist_writes_state_and_log(map_file: Path, tmp_path: Path):
+def test_move_persist_logs_then_writes_state(map_file: Path, tmp_path: Path):
     """
-    中文：测试 persist=true：
-      - 覆盖写 state_file（player.location 更新，version+1，last_event_id）
-      - 追加写 log_file（jsonl 一行）
-    English: persist=true should overwrite state snapshot and append JSONL log
-    """
-    state_file = tmp_path / "state.json"
-    log_file = tmp_path / "movement_log.jsonl"
+    中文：
+      测试 persist=true 的“先 log 再 state”语义：
+      1) JSONL 事件日志必须被写入（至少一行）
+      2) state 快照必须被覆盖写（player.location 更新，version+1，last_event_id）
+      3) state.last_event_id 必须等于日志中的 event_id（证明两者对齐）
+      4) 日志中的 state_version_before/state_version_after 必须与 state.version 对齐
 
-    # initial state snapshot
-    state_file.write_text(json.dumps({
-        "version": 0,
-        "player": {"location": "A00"},
-    }, ensure_ascii=False, indent=2), encoding="utf-8")
+    English:
+      Validate persist=true with "log-first then state":
+      1) JSONL event log is written (at least one line)
+      2) state snapshot is overwritten (location updated, version+1, last_event_id)
+      3) state.last_event_id equals event log event_id (consistency)
+      4) log state_version_before/after aligns with snapshot version
+    """
+    state_file = tmp_path / "world_state.json"
+    log_file = tmp_path / "state_events.jsonl"
+
+    # 初始状态 / Initial snapshot
+    state_file.write_text(
+        json.dumps(
+            {
+                "version": 0,
+                "player": {"location": "A00"},
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
     inp = server.MoveInput(
         map_file=str(map_file),
-        from_id=None,            # rely on state_file player.location
+        from_id=None,  # rely on state_file's player.location
         to_id="A02",
-        state={},                # no extra rules
+        state={},
         persist=True,
         state_file=str(state_file),
         log_file=str(log_file),
@@ -183,26 +199,50 @@ def test_move_persist_writes_state_and_log(map_file: Path, tmp_path: Path):
 
     assert out.ok is True
     assert out.new_location == "A02"
-    assert out.persisted_state is not None
     assert out.persisted_log is not None
+    assert out.persisted_state is not None
 
-    # state updated
+    # ---------------------------------------------------------
+    # 1) 验证日志已写入 / Event log must exist & have >= 1 line
+    # ---------------------------------------------------------
+    assert log_file.exists()
+    lines = log_file.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) >= 1
+
+    # 中文：取最后一条事件（最稳：避免未来你们可能追加多条 commit 事件）
+    # English: Use the last event line (robust if you later add more events)
+    event = json.loads(lines[-1])
+
+    # 基本字段 / Basic schema checks
+    assert event.get("type") == "move"
+    assert isinstance(event.get("event_id"), str) and len(event["event_id"]) > 0
+    assert event.get("payload", {}).get("from") == "A00"
+    assert event.get("payload", {}).get("to") == "A02"
+    assert event.get("payload", {}).get("ok") is True
+
+    # ---------------------------------------------------------
+    # 2) 验证 state 已覆盖写 / State snapshot overwritten correctly
+    # ---------------------------------------------------------
     new_state = json.loads(state_file.read_text(encoding="utf-8"))
     assert new_state["player"]["location"] == "A02"
     assert new_state["version"] == 1
     assert isinstance(new_state.get("last_event_id"), str)
 
-    # log appended
-    assert log_file.exists()
-    lines = log_file.read_text(encoding="utf-8").strip().splitlines()
-    assert len(lines) == 1
-    entry = json.loads(lines[0])
-    assert entry["from_id"] == "A00"
-    assert entry["to_id"] == "A02"
-    assert entry["ok"] is True
-    assert entry["distance"] == 2  # A00 -> A02 is direct? actually A00 has A02 => distance 1 in this map
-    # NOTE:
-    # 如果你希望这里是 1，请把 map 里 A00<->A02 保持直连（我们当前 map_file fixture 是直连）
-    # In our fixture, A00 is directly connected to A02, so expected distance is 1.
-    # We'll accept either in case you modify the map structure.
-    assert entry["distance"] in (1, 2)
+    # ---------------------------------------------------------
+    # 3) 关键一致性：state.last_event_id == log.event_id
+    #    Key consistency: snapshot last_event_id matches log event_id
+    # ---------------------------------------------------------
+    assert new_state["last_event_id"] == event["event_id"]
+
+    # ---------------------------------------------------------
+    # 4) 版本对齐 / Version alignment between log and snapshot
+    # ---------------------------------------------------------
+    assert event.get("state_version_before") == 0
+    assert event.get("state_version_after") == 1
+
+    # ---------------------------------------------------------
+    # 5) 距离校验（fixture 中 A00 <-> A02 直连 => distance=1）
+    #    Distance check (A00 directly connects to A02 in fixture => distance=1)
+    # ---------------------------------------------------------
+    assert event["payload"]["distance"] == 1
+    assert event["payload"]["path"] == ["A00", "A02"]
