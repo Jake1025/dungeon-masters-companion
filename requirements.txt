@@ -1,4 +1,6 @@
+faiss-cpu>=1.8.0,<2
 mcp==1.26.0
+numpy>=1.26,<3
 ollama==0.6.1
 psycopg==3.3.2
 pydantic==2.12.5
