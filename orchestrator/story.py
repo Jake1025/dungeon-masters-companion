@@ -565,6 +565,11 @@ BEAT_LIST = [
 class StoryGraph:
     """Minimal lookup/describe helper for story nodes."""
 
+    _ALIASES = {
+        "bar": "Copper Cup",
+        "tavern": "Copper Cup",
+    }
+
     def __init__(
         self,
         nodes: Iterable[StoryNode] | None = None,
@@ -598,6 +603,10 @@ class StoryGraph:
 
     def get_node(self, key: str) -> StoryNode | None:
         return self.by_key.get(key)
+
+    def resolve_alias(self, token: str) -> str | None:
+        """Return the canonical node key for a known alias, if present."""
+        return self._ALIASES.get(token)
 
     def upsert_node(self, node: StoryNode) -> StoryNode:
         """

@@ -285,7 +285,7 @@ class Orchestrator:
         self.last_intent = intent
 
         # Apply intent to focus
-        self._apply_intent_to_focus(intent)
+        self._apply_intent_to_focus(intent, player_input)
         self._refresh_active_keys()
 
         # Focus refinement (optional)
@@ -572,7 +572,7 @@ class Orchestrator:
             """
         ).strip()
 
-    def _apply_intent_to_focus(self, intent: Dict[str, Any]) -> None:
+    def _apply_intent_to_focus(self, intent: Dict[str, Any], player_input: str) -> None:
         """
         Use the parsed intent to set the current focus.
         - If action is move/talk/inspect and targets include known nodes, focus them.
@@ -588,11 +588,16 @@ class Orchestrator:
 
         if targets and action in {"move", "talk", "inspect", "other"}:
             self.current_focus = targets[:2]
-        elif not self.current_focus and targets:
+            return
+        if not self.current_focus and targets:
             self.current_focus = targets[:2]
+            return
+
+        # heuristic fallback: try to resolve from raw player input
+        if action in {"move", "talk", "inspect", "other"}:
+            self._resolve_focus_from_player(player_input)
         elif not self.current_focus:
-            # heuristic fallback
-            self._resolve_focus_from_player(" ".join(targets))
+            self._resolve_focus_from_player(player_input)
 
     def _build_intro_prompt(self) -> str:
         keys = sorted(self.active_keys)
@@ -742,7 +747,11 @@ class Orchestrator:
         if not candidates:
             return
 
-        best = self._match_candidate_to_node(candidates[0])
+        best = None
+        for candidate in candidates:
+            best = self._match_candidate_to_node(candidate)
+            if best:
+                break
         if best:
             self.current_focus = [best]
 
@@ -750,12 +759,25 @@ class Orchestrator:
         cand = candidate.strip().lower()
         if not cand:
             return None
+        # normalize: remove common articles and punctuation
+        cand_norm = re.sub(r"[^a-z0-9\s]", "", cand)
+        cand_norm = re.sub(r"^(the|a|an)\s+", "", cand_norm).strip()
+
+        alias = self.story.resolve_alias(cand_norm)
+        if alias:
+            return alias
+
         # exact match
-        if cand in (k.lower() for k in self.story.by_key):
-            return next(k for k in self.story.by_key if k.lower() == cand)
-        # substring match heuristic: pick first node key containing candidate
         for key in self.story.by_key:
-            if cand in key.lower():
+            if key.lower() == cand or key.lower() == cand_norm:
+                return key
+
+        # substring match heuristic (both directions)
+        for key in self.story.by_key:
+            key_norm = re.sub(r"[^a-z0-9\s]", "", key.lower()).strip()
+            if cand_norm and cand_norm in key_norm:
+                return key
+            if key_norm and key_norm in cand_norm:
                 return key
         return None
 
