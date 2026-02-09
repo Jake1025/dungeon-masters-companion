@@ -24,20 +24,43 @@ class LLMStep:
     parser: Optional[Callable[[Dict[str, str]], Any]] = None
 
     def run(self, adapter: LLMAdapter, payload_text: str) -> tuple[Any, Dict[str, Any]]:
+        if adapter.verbose:
+            print(f"[STEP-ENTER] {self.name} run() entered")
+
         tags = set(self.tags)
         if self.use_cot:
             tags |= {"thoughts"}
 
         attempts: List[Dict[str, Any]] = []
 
+        # step-local retry guard (NO adapter mutation)
+        forced_retry_pending = (
+            adapter.verbose
+            and getattr(adapter, "force_retry_stage", None) == self.name
+        )
+
         for attempt_num in range(1, self.max_attempts + 1):
+            if adapter.verbose:
+                print(f"[LLM] Step '{self.name}' — attempt {attempt_num}")
+
             raw = adapter.request_text(self.name, self.system_prompt, payload_text)
             sections = parse_sections(raw, tags)
 
             try:
                 if self.validator:
                     self.validator(sections)
+
                 parsed = self.parser(sections) if self.parser else sections
+
+                # FORCE ONE STEP-LEVEL RETRY
+                if forced_retry_pending:
+                    forced_retry_pending = False  # only once
+
+                    if adapter.verbose:
+                        print(f"[STEP-RETRY] forcing retry in step '{self.name}'")
+
+                    raise ValueError("Forced step-level retry (intentional)")
+
             except Exception as exc:
                 attempts.append({
                     "attempt": attempt_num,
@@ -46,6 +69,9 @@ class LLMStep:
                     "sections": sections,
                     "error": str(exc),
                 })
+
+                if adapter.verbose:
+                    print(f"[STEP-RETRY] {self.name}: {exc}")
 
                 payload_text += (
                     f"\n\n(Note: last output was invalid: {exc}. "
@@ -68,6 +94,7 @@ class LLMStep:
 
 
 
+
 # =========================
 # Parsing Helpers
 # =========================
@@ -81,12 +108,12 @@ def parse_sections(text: str, tags: set[str]) -> Dict[str, str]:
         lower = stripped.lower()
 
         matched = None
-        for tag in sorted(tags):
+        for tag in tags:  # ← no need to sort
             prefix = f"{tag}:"
             if lower.startswith(prefix):
                 matched = tag
                 content = stripped[len(prefix):].strip()
-                result[tag] = [content]
+                result.setdefault(tag, []).append(content)
                 current = tag
                 break
 
@@ -98,6 +125,7 @@ def parse_sections(text: str, tags: set[str]) -> Dict[str, str]:
         for tag, lines in result.items()
         if lines
     }
+
 
 
 

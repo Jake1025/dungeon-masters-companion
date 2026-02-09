@@ -57,6 +57,7 @@ class StoryEngine:
                 },
             },
             verbose=verbose,
+            # force_retry_stage="plan"
         )
 
 
@@ -187,6 +188,10 @@ class StoryEngine:
 
         if advance:
             self.beats.advance()
+        
+        #rebuild state after beat changes
+        state = self._make_state(player_input, intent)
+        assert state.beat_current == self.beats.progress_text()
 
         # -----------------------
         # NARRATE
