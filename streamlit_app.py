@@ -196,6 +196,58 @@ def _inject_app_background(image_path: Path) -> None:
     )
 
 
+def _dot_escape(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _build_story_graph_dot(snapshot: Dict[str, Any]) -> str:
+    nodes = snapshot.get("nodes") or []
+    edges = snapshot.get("edges") or []
+    active = set(snapshot.get("active_keys") or [])
+    focus = set(snapshot.get("focus") or [])
+
+    lines = [
+        "graph Story {",
+        '  graph [bgcolor="transparent", splines=true, overlap=false];',
+        '  node [shape=ellipse, style=filled, fontname="Helvetica", fontsize=11, color="#2f3a45"];',
+        '  edge [color="#98a1ab", penwidth=1.2];',
+    ]
+
+    for node in nodes:
+        key = str(node.get("key", "")).strip()
+        if not key:
+            continue
+        label = _dot_escape(key)
+        if key in focus:
+            fill = "#f4d35e"
+            font = "#1f2328"
+            pen = "#b08900"
+            penwidth = 2.4
+        elif key in active:
+            fill = "#61c9a8"
+            font = "#0b1a15"
+            pen = "#2f7f64"
+            penwidth = 2.0
+        else:
+            fill = "#c8ced6"
+            font = "#1f2328"
+            pen = "#7b8794"
+            penwidth = 1.2
+        lines.append(
+            f'  "{label}" [fillcolor="{fill}", fontcolor="{font}", color="{pen}", penwidth={penwidth}];'
+        )
+
+    for edge in edges:
+        src = str(edge.get("src", "")).strip()
+        dst = str(edge.get("dst", "")).strip()
+        if not src or not dst:
+            continue
+        lines.append(f'  "{_dot_escape(src)}" -- "{_dot_escape(dst)}";')
+
+    lines.append("}")
+    return "\n".join(lines)
+
+
 def main() -> None:
     st.set_page_config(page_title="The Dungeon Master's Companion", layout="wide")
     st.markdown(
@@ -318,25 +370,30 @@ def main() -> None:
             )
 
     with dm_tab:
+        snapshot = orchestrator.snapshot()
         st.subheader("Campaign Status")
         if show_status:
-            turn: Dict[str, Any] | None = st.session_state.get("last_turn")
-            if turn:
-                beat = turn.get("beat_state", {})
-                st.markdown(
-                    f"**Beat:** {beat.get('current_index', 0) + 1} "
-                    f"of {len(orchestrator.beat_list)} - {beat.get('current', '')}"
-                )
-                st.markdown(f"**Focus:** {', '.join(turn.get('focus') or []) or 'None'}")
-                st.markdown(f"**Active keys:** {', '.join(turn.get('active_keys') or []) or 'None'}")
-                st.markdown(f"**Story status:** {turn.get('story_status') or 'Not set'}")
-                summary = turn.get("session_summary") or ""
-                if summary:
-                    st.text_area("Session summary", value=summary, height=160)
-            else:
-                st.markdown("No turns yet. Submit an action to see story status.")
+            beat = snapshot.get("beat_state", {})
+            st.markdown(
+                f"**Beat:** {beat.get('current_index', 0) + 1} "
+                f"of {len(orchestrator.beat_list)} - {beat.get('current', '')}"
+            )
+            st.markdown(f"**Focus:** {', '.join(snapshot.get('focus') or []) or 'None'}")
+            st.markdown(f"**Active keys:** {', '.join(snapshot.get('active_keys') or []) or 'None'}")
+            st.markdown(f"**Story status:** {snapshot.get('story_status') or 'Not set'}")
+            summary = snapshot.get("session_summary") or ""
+            if summary:
+                st.text_area("Session summary", value=summary, height=160)
         else:
             st.markdown("Story status display is disabled in the sidebar.")
+
+        st.subheader("Story Graph")
+        if snapshot.get("nodes"):
+            graph_dot = _build_story_graph_dot(snapshot)
+            st.graphviz_chart(graph_dot, use_container_width=True)
+            st.caption("Gold = focus. Teal = active. Gray = inactive.")
+        else:
+            st.markdown("No story graph data yet.")
 
         if show_debug:
             debug_data = st.session_state.get("last_turn", {}).get("llm_debug")
