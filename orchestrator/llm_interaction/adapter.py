@@ -17,7 +17,7 @@ class LLMError(RuntimeError):
 class LLMAdapter:
     """
     Thin gateway around the LLM API.
-    Handles sending, retries, parsing, and normalization.
+    Handles transport-level retries and normalization.
     """
 
     def __init__(
@@ -28,6 +28,7 @@ class LLMAdapter:
         stage_options: Optional[Mapping[str, Mapping[str, Any]]] = None,
         max_attempts: int = 3,
         verbose: bool = False,
+        force_retry_stage: Optional[str] = None,  # used ONLY by LLMStep
     ) -> None:
 
         self.model = model
@@ -35,6 +36,7 @@ class LLMAdapter:
         self.stage_options = dict(stage_options or {})
         self.max_attempts = max(1, max_attempts)
         self.verbose = verbose
+        self.force_retry_stage = force_retry_stage
 
     # -------------------------------------------------
 
@@ -46,6 +48,9 @@ class LLMAdapter:
             logger.info("[%s] request started", stage.upper())
 
         for attempt in range(1, self.max_attempts + 1):
+            if self.verbose:
+                print(f"[LLM] Attempt {attempt} for stage '{stage}'")
+
             try:
                 response = ollama.chat(
                     model=self.model,
@@ -61,9 +66,14 @@ class LLMAdapter:
 
             if content:
                 if self.verbose:
-                    logger.info("[%s] success (%s chars)", stage.upper(), len(content))
+                    logger.info(
+                        "[%s] success (%s chars)",
+                        stage.upper(),
+                        len(content),
+                    )
                 return content
 
+            # empty → retry
             messages.append(
                 {
                     "role": "system",
@@ -136,10 +146,8 @@ class LLMAdapter:
 
     def _stage_options(self, stage: str) -> Dict[str, Any]:
         options = dict(self.default_options)
-
         if stage in self.stage_options:
             options.update(self.stage_options[stage])
-
         return options
 
     # -------------------------------------------------
@@ -189,7 +197,8 @@ class LLMAdapter:
     def _strip_code_fence(text: str) -> str:
         if text.startswith("```"):
             return "\n".join(
-                line for line in text.splitlines() if not line.startswith("```")
+                line for line in text.splitlines()
+                if not line.startswith("```")
             ).strip()
         return text
 

@@ -59,7 +59,7 @@ def print_llm_verbose(turn_number: int, trace: Dict[str, Any]) -> None:
         if step_name.startswith("STATE_"):
             continue
 
-        print(f"[LLM] {step_name}")
+        print(f"[LLM] {step_name} STEP")
 
         attempts = data.get("attempts", [])
 
