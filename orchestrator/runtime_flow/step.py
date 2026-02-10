@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Union
 import re
 
 from orchestrator.llm_interaction.adapter import LLMAdapter, LLMError
@@ -23,7 +23,14 @@ class LLMStep:
     validator: Optional[Callable[[Dict[str, str]], None]] = None
     parser: Optional[Callable[[Dict[str, str]], Any]] = None
 
-    def run(self, adapter: LLMAdapter, payload_text: str) -> tuple[Any, Dict[str, Any]]:
+    def run(
+        self,
+        adapter: LLMAdapter,
+        payload_text: str,
+        *,
+        tools: Optional[Sequence[Union[Mapping[str, Any], Any, Callable]]] = None,
+        tool_executor: Optional[Callable[[str, Mapping[str, Any]], Any]] = None,
+    ) -> tuple[Any, Dict[str, Any]]:
         if adapter.verbose:
             print(f"[STEP-ENTER] {self.name} run() entered")
 
@@ -43,7 +50,13 @@ class LLMStep:
             if adapter.verbose:
                 print(f"[LLM] Step '{self.name}' — attempt {attempt_num}")
 
-            raw = adapter.request_text(self.name, self.system_prompt, payload_text)
+            raw = adapter.request_text(
+                self.name,
+                self.system_prompt,
+                payload_text,
+                tools=tools,
+                tool_executor=tool_executor,
+            )
             sections = parse_sections(raw, tags)
 
             try:
