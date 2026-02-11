@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Callable, Dict, Mapping, Optional
+from typing import Any, Callable, Dict, Mapping, Optional, Sequence, Union
 
 import ollama
 from ollama import ResponseError
@@ -40,23 +40,76 @@ class LLMAdapter:
 
     # -------------------------------------------------
 
-    def request_text(self, stage: str, system_prompt: str, payload_text: str) -> str:
+    def request_text(
+        self,
+        stage: str,
+        system_prompt: str,
+        payload_text: str,
+        *,
+        tools: Optional[Sequence[Union[Mapping[str, Any], Any, Callable]]] = None,
+        tool_executor: Optional[Callable[[str, Mapping[str, Any]], Any]] = None,
+        max_tool_rounds: int = 8,
+    ) -> str:
         messages = self._build_messages(system_prompt, payload_text)
         options = self._stage_options(stage)
 
         if self.verbose:
             logger.info("[%s] request started", stage.upper())
 
+        if tools:
+            if tool_executor is None:
+                tool_executor = self._build_callable_tool_executor(tools)
+            if tool_executor is None:
+                raise ValueError(
+                    "tools were provided, but no tool_executor was provided and no callable tools were found"
+                )
+
+            for _ in range(max(1, max_tool_rounds)):
+                response = self._chat_with_retry(messages, options, stage, tools=tools)
+                tool_calls = self._extract_tool_calls(response)
+
+                if tool_calls:
+                    for call in tool_calls:
+                        fn = call.get("function") or {}
+                        name = str(fn.get("name") or "")
+                        args = fn.get("arguments") or {}
+
+                        if not name:
+                            raise LLMError("Tool call missing function name")
+                        if not isinstance(args, Mapping):
+                            raise LLMError("Tool call arguments must be an object")
+
+                        result = tool_executor(name, args)
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_name": name,
+                                "content": json.dumps(result, ensure_ascii=True),
+                            }
+                        )
+                    continue
+
+                content = self._extract_content(response).strip()
+                if content:
+                    if self.verbose:
+                        logger.info("[%s] success (%s chars)", stage.upper(), len(content))
+                    return content
+
+                messages.append(
+                    {
+                        "role": "system",
+                        "content": "Please provide a detailed natural-language response.",
+                    }
+                )
+
+            raise LLMError(f"Stage '{stage}' exceeded max_tool_rounds={max_tool_rounds}.")
+
         for attempt in range(1, self.max_attempts + 1):
             if self.verbose:
                 print(f"[LLM] Attempt {attempt} for stage '{stage}'")
 
             try:
-                response = ollama.chat(
-                    model=self.model,
-                    messages=messages,
-                    options=options,
-                )
+                response = ollama.chat(model=self.model, messages=messages, options=options)
                 content = self._extract_content(response)
 
             except ResponseError as exc:
@@ -175,6 +228,83 @@ class LLMAdapter:
             content = "".join(map(str, content))
 
         return str(content)
+
+    @staticmethod
+    def _extract_tool_calls(response: Any) -> list[dict[str, Any]]:
+        """
+        Normalize Ollama tool calls into a plain list of dicts:
+        [{'function': {'name': str, 'arguments': {...}}}, ...]
+        """
+        message = getattr(response, "message", None)
+        if message is None and isinstance(response, dict):
+            message = response.get("message")
+        if not message:
+            return []
+
+        # pydantic model case
+        tool_calls = getattr(message, "tool_calls", None)
+        if tool_calls:
+            normalized: list[dict[str, Any]] = []
+            for tc in tool_calls:
+                if hasattr(tc, "model_dump"):
+                    normalized.append(tc.model_dump(exclude_none=True))
+                elif isinstance(tc, dict):
+                    normalized.append(tc)
+            return normalized
+
+        # dict case
+        if isinstance(message, dict):
+            tool_calls = message.get("tool_calls")
+            if isinstance(tool_calls, list):
+                return [tc for tc in tool_calls if isinstance(tc, dict)]
+
+        return []
+
+    @staticmethod
+    def _build_callable_tool_executor(
+        tools: Optional[Sequence[Union[Mapping[str, Any], Any, Callable]]],
+    ) -> Optional[Callable[[str, Mapping[str, Any]], Any]]:
+        tool_map: Dict[str, Callable] = {}
+        for tool in tools or []:
+            if callable(tool):
+                name = getattr(tool, "__name__", "")
+                if name:
+                    tool_map[name] = tool
+
+        if not tool_map:
+            return None
+
+        def _executor(tool_name: str, arguments: Mapping[str, Any]) -> Any:
+            func = tool_map.get(tool_name)
+            if func is None:
+                raise LLMError(f"Unknown callable tool '{tool_name}'")
+            return func(**dict(arguments))
+
+        return _executor
+
+    def _chat_with_retry(
+        self,
+        messages: list[dict[str, Any]],
+        options: Dict[str, Any],
+        stage: str,
+        *,
+        tools: Optional[Sequence[Union[Mapping[str, Any], Any, Callable]]] = None,
+    ) -> Any:
+        for attempt in range(1, self.max_attempts + 1):
+            if self.verbose:
+                print(f"[LLM] Attempt {attempt} for stage '{stage}'")
+            try:
+                return ollama.chat(
+                    model=self.model,
+                    messages=messages,
+                    tools=tools,
+                    options=options,
+                )
+            except ResponseError as exc:
+                raw = self._extract_raw_from_error(exc)
+                if raw:
+                    return {"message": {"content": raw}}
+        raise LLMError(f"Stage '{stage}' failed after {self.max_attempts} attempts.")
 
     @staticmethod
     def _extract_raw_from_error(exc: Exception) -> Optional[str]:
