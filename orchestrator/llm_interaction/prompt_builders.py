@@ -126,8 +126,15 @@ def build_validate_prompt(state: PromptState, plan: str) -> str:
         # Player Input
         {state.player_input}
 
+        # Entity Information
+        {"entity": 
+            "location": ENTITY_REGISTRY["entity"].location,
+            "memories": ENTITY_REGISTRY["entity"].status,
+        }
+        
         # Proposed Plan
         {plan}
+
         """
     ).strip()
 
@@ -155,6 +162,9 @@ def build_narrate_prompt(
         Active Nodes: {keys or 'None'}
         Status: {state.story_status or 'Not set'}
         Session Summary: {state.session_summary}
+
+        #Entity Memories
+        
 
         # Recent Conversation
         {state.history_text or 'No prior conversation.'}
