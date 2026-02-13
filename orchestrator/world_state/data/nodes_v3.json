@@ -13,7 +13,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "A ring of canvas-topped stalls crowd the edge of the square. Fishmongers, spice sellers, and tinkers hawk their wares while children weave between crates and baskets.",
-    "desc_zh": "广场边缘的布棚摊位围成一圈，鱼贩香料商吆喝不断，孩子在箱筐间穿梭。"
+    "desc_zh": "广场边缘布棚成环，商贩云集、叫卖喧阗；鱼鲜香料陈列其间，孩童穿梭如织。"
   },
   "L003": {
     "name": "Temple of the Tide",
@@ -45,7 +45,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "Wooden piers stretch out over dark water, crowded with fishing boats and the occasional merchant ship. Ropes creak, gulls wheel overhead, and the smell of tar and brine hangs thick in the air.",
-    "desc_zh": "木栈桥伸向暗水，渔船与商船挤靠；绳索吱呀、海鸥盘旋，柏油与盐腥扑面。"
+    "desc_zh": "木栈延海，渔船商舶往返不绝；绳索作响、海鸥盘旋，柏油与咸风交织。"
   },
   "L007": {
     "name": "Warehouse Row",
@@ -53,7 +53,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "A line of squat stone warehouses hugs the waterfront. Their heavy doors and barred windows suggest both valuable cargo and things better kept out of sight. One doorframe bears a faded, rusty smear that no one can quite explain.",
-    "desc_zh": "沿岸矮石仓库一字排开，厚门铁窗藏着货物与秘密；门框上残留难以解释的锈红污痕。"
+    "desc_zh": "滨岸石仓林立，重门铁窗、讳莫如深；门框上残留难以解释的锈红污痕。"
   },
   "L008": {
     "name": "Smuggler's Entrance",
@@ -61,7 +61,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "A half-concealed grate and narrow stone steps leading below the warehouses. The smell of damp and old river-mud clings to the air here.",
-    "desc_zh": "半遮掩的栅格与狭窄石阶通往仓库下方，潮湿与陈年河泥味挥之不去。"
+    "desc_zh": "仓下暗格半掩，石阶曲折通幽；潮湿泥腥挥之不去。"
   },
   "L009": {
     "name": "Old Well",
@@ -69,7 +69,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "An old stone well at the edge of the square, its rope replaced more than once. Locals say its water never runs dry, and that it connects to forgotten tunnels beneath the town. Faint rust-brown stains cling to some of the stones as though someone once washed something away here.",
-    "desc_zh": "广场边的古井，井绳多次更换；传言连着地下旧道，井壁还粘着似曾清洗过什么的锈褐痕。"
+    "desc_zh": "古井傍市，传言通往地下旧道；井石带锈，如曾洗去不可言之物。"
   },
   "L010": {
     "name": "Watch Barracks",
@@ -77,7 +77,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "A sturdy building flying the town's colors. Racks of spears stand by the door, and off-duty guards swap stories on the steps when the weather is mild.",
-    "desc_zh": "挂着镇徽的坚固营房，门旁枪架林立，天气好时守卫在台阶上交换传闻。"
+    "desc_zh": "守军营房旗帜高悬，枪架森然；卫士闲谈间亦闻风声鹤唳。"
   },
   "L011": {
     "name": "East Alley",
@@ -85,7 +85,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "A narrow, shadowed alley slipping between tall buildings. Laundry lines crisscross overhead, and the back doors of several shops and taverns open onto it. Here and there, someone has scrubbed at dark stains that refuse to fully fade from the cobbles.",
-    "desc_zh": "高墙间的阴影小巷，晾衣绳纵横，店铺酒馆后门皆通此处；暗斑被反复刷洗仍难褪尽。"
+    "desc_zh": "狭巷幽暗，衣绳纵横，店铺酒馆后门相连；暗斑被反复刷洗仍难褪尽。"
   },
   "L012": {
     "name": "Back Door - Copper Cup",
@@ -101,7 +101,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "A crumbling wayside shrine tucked into a bend of the alley, its carvings worn by sea-wind and salt. Offerings of shells and coins gather in a shallow stone bowl.",
-    "desc_zh": "巷角的残破路祠，刻纹被海风盐雾磨蚀，浅石碗里积着贝壳与硬币供奉。"
+    "desc_zh": "残祠藏于巷角，海风侵蚀；贝壳钱币为供，香火未绝。"
   },
   "L014": {
     "name": "South Bridge",
@@ -109,7 +109,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "A low stone bridge arching over a narrow river that feeds the harbor. Lanterns line the parapet, and you can see both the town walls and the distant open sea from its center. More than one passerby has reported waking here with aching feet and no memory of how they arrived.",
-    "desc_zh": "横跨入海小河的低矮石桥，灯笼沿栏而列；桥心可望城墙与远海，曾有人在此醒来却不记得如何到达。"
+    "desc_zh": "石桥横河，灯列如星；桥心可望城墙与远海，有人梦醒于此，却不记来路。"
   },
   "L015": {
     "name": "Riverside Path",
@@ -125,7 +125,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "A cluster of small wooden shacks perched on pilings above the river. Nets hang to dry, and lantern-light spills from half-open doors late into the night. In more than one doorway, dark stains mar the floorboards with no memory of how they appeared.",
-    "desc_zh": "河上木桩支起的渔棚群，渔网晾晒、夜灯从半掩门缝溢出；多处门槛地板有来历不明的暗斑。"
+    "desc_zh": "河上木棚，渔网晾晒、灯火微明；多处门槛地板有来历不明的暗斑。"
   },
   "L017": {
     "name": "Lumberyard",
@@ -133,7 +133,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "Stacks of freshly cut logs and the tang of sap fill the air. A small shack nearby shows scuffed floorboards and a corner where someone scrubbed at dried, dark stains.",
-    "desc_zh": "木料场堆着新砍原木，松脂味弥漫；旁边小屋地板磨损，角落有被刷洗过的干涸暗迹。"
+    "desc_zh": "木料场新料堆积、松脂扑鼻；旁边小屋地板磨损，角落有被刷洗过的干涸暗迹。"
   },
   "L018": {
     "name": "Wizard's House",
@@ -141,7 +141,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "A tall stone house with shuttered windows and a heavy iron fence, set just off the square. Lanterns burn late behind the curtains, and a pair of hired guards discourage casual callers.",
-    "desc_zh": "广场旁的高石宅，窗扉紧闭、铁栅森严；帘后常亮灯火，雇佣守卫拒绝闲人靠近。"
+    "desc_zh": "高墙铁篱之宅，门窗紧闭，帘后灯火长明；雇佣守卫拒绝闲人靠近。"
   },
   "L019": {
     "name": "Copper Cup",
@@ -149,7 +149,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "A low-beamed harbor tavern. Lanterns swing above crowded tables, and the air smells of stew, sea-salt, and woodsmoke. The barkeep Mara watches everything from behind the counter.",
-    "desc_zh": "海港酒馆“铜杯”，梁低人密，灯笼摇晃；炖汤、海盐与木烟混杂，老板娘玛拉在吧台后洞察一切。"
+    "desc_zh": "海港酒馆“铜杯”，梁低而人声鼎沸，灯笼摇曳；酒香海味交杂；老板娘玛拉在吧台后洞察一切。"
   },
   "L020": {
     "name": "Bar Counter",
@@ -157,7 +157,7 @@
     "node_type": "location",
     "tags": [],
     "desc_en": "Shelves of bottles, a till, and crates tucked beneath. A loose crate hides something wedged behind it.",
-    "desc_zh": "吧台后瓶架与钱匣齐备，底下塞着木箱；松动的箱子后似乎藏着东西。"
+    "desc_zh": "瓶架林列、暗格潜藏；松动木箱之后似有密物。"
   },
   "L021": {
     "name": "Stair Landing",
