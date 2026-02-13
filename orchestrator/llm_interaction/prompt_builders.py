@@ -137,39 +137,46 @@ def build_narrate_prompt(
     plan: str,
     verdict: str,
     notes: str,
+    action_results: list[dict] = None,
 ) -> str:
-    keys = ", ".join(state.active_keys)
+    """Build the narration prompt with action results."""
+    
+    action_summary = ""
+    if action_results:
+        action_summary = "\n\n# Actions Executed\n"
+        for tool_call in action_results:
+            result = tool_call["result"]
+            if result.get("success"):
+                action_summary += f"{tool_call['name']}: {result.get('reason', 'Success')}\n"
+            else:
+                action_summary += f"{tool_call['name']}: {result.get('reason', 'Failed')}\n"
+    
+    return f"""# Story Context
 
-    return textwrap.dedent(
-        f"""
-        # Intent
-        {_format_intent(state.intent)}
+Player's Current Location: {state.focus[0] if state.focus else "Unknown"}
 
-        # Beat
-        Current: {state.beat_current}
-        Next: {state.beat_next}
-        Guide: {state.beat_guide}
+Active Story Nodes (available for this scene):
+{chr(10).join(f"- {key}" for key in state.active_keys)}
 
-        # Scene
-        Location/Focus: {', '.join(state.focus) or 'None'}
-        Active Nodes: {keys or 'None'}
-        Status: {state.story_status or 'Not set'}
-        Session Summary: {state.session_summary}
+# Beat
+Current: {state.beat_current}
+Next: {state.beat_next}
 
-        # Recent Conversation
-        {state.history_text or 'No prior conversation.'}
+# Recent Conversation
+{state.history_text}
 
-        # Player Input
-        {state.player_input}
+# Plan
+{plan}
 
-        # Validated Plan
-        {plan}
+# Validation
+Verdict: {verdict}
+Notes: {notes}
+{action_summary}
 
-        # Validator
-        Verdict: {verdict}
-        Notes: {notes}
-        """
-    ).strip()
+---
+
+Now generate the narrative response based on the CURRENT story context above.
+"""
 
 
 def build_status_prompt(state: PromptState) -> str:
