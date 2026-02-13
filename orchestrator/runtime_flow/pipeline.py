@@ -4,6 +4,7 @@ from ..world_state.story import StoryGraph, BEAT_LIST, STARTING_STATE
 from ..llm_interaction.adapter import LLMAdapter
 from .session_state import BeatTracker, SessionSummary, ActiveKeyManager, FocusManager, SnapshotBuilder
 from .step_registry import build_steps
+from .step import parse_sections, validate_narration_step
 from ..llm_interaction.prompt_builders import (
     PromptState,
     build_intro_prompt,
@@ -14,14 +15,16 @@ from ..llm_interaction.prompt_builders import (
     build_narrate_prompt,
     build_status_prompt,
 )
-
+from ..world_state.story import create_initial_game_state
+import json
+from ..world_state.tools import TOOL_DEFINITIONS, VALIDATE_TOOLS, execute_tool, move_to_location
 
 class StoryEngine:
 
     def __init__(
         self,
         *,
-        model: str = "gemma3:4b",
+        model: str = "glm-4.7-flash:q8_0",
         story_graph: Optional[StoryGraph] = None,
         initial_keys: Optional[Sequence[str]] = None,
         beats: Optional[Sequence[str]] = None,
@@ -42,25 +45,29 @@ class StoryEngine:
         self.discovered_keys = set(self.story.initial_keys)
         self.active_keys = set()
 
+        self.game_state = create_initial_game_state(self.story)
+
         self.adapter = LLMAdapter(
             model=model,
             default_options={
-                "temperature": 0.6,
-                "top_p": 0.9,
-                # "repeat_penalty": 1.1,
-                # "num_predict": 512,
+                "temperature": 0.2,
+                "top_p": 0.5,
+                "repeat_penalty": 1.0, # No penalty for repeating tokens (deterministic)
+                "top_k": 10, # Only consider top 10 most likely tokens (very narrow)
+                "min_p": 0.1, # Minimum probability threshold
             },
             stage_options={
                 "narrate": {
                     "temperature": 0.75,
                     "top_p": 0.93,
+                    "repeat_penalty": 1.15, # Penalize repetition (more varied prose)
+                    "top_k": 50, #wider variety
+                    "min_p": 0.05, 
                 },
             },
             verbose=verbose,
             # force_retry_stage="plan"
         )
-
-
 
         self.steps = build_steps()
         self.focus_manager = FocusManager()
@@ -90,6 +97,7 @@ class StoryEngine:
         )
 
     # -----------------------
+
     def run_turn(self, player_input: str):
 
         trace = {} if self.adapter.verbose else None
@@ -111,20 +119,34 @@ class StoryEngine:
         if trace is not None:
             trace["INTENT"] = intent_debug
 
-        # -----------------------
+        # Handle implicit_move by moving player (without changing intent)
+        if intent.get("implicit_move") and intent.get("targets"):
+            target = intent["targets"][0]
+            
+            # Check if target is a location
+            target_node = self.story.get_node(target)
+            if target_node and target_node.node_type.value == "location":
+                # Check if player can move there
+                move_result = move_to_location(target, self.game_state, self.story)
+                
+                if move_result["success"]:
+                    if self.adapter.verbose:
+                        print(f"[INTENT] Implicit move succeeded: moved to {target}")
+                    # Update focus immediately
+                    self.current_focus = [target]
+                else:
+                    if self.adapter.verbose:
+                        print(f"[INTENT] Implicit move failed: {move_result['reason']}")
 
-        self.current_focus = self.focus_manager.apply_intent(
-            intent,
-            self.current_focus,
-            self.story,
-        )
+        # -----------------------
+        # REFRESH ACTIVE KEYS
+        # -----------------------
 
         self.active_keys = self.active_manager.refresh(
             self.story,
             self.current_focus,
             beat_text=self.beats.current(),
         )
-
 
         def build_state_snapshot():
             return {
@@ -143,9 +165,6 @@ class StoryEngine:
         if trace is not None:
             trace["STATE_BEFORE"] = build_state_snapshot()
 
-
-
-
         # -----------------------
         # PLAN
         # -----------------------
@@ -157,63 +176,196 @@ class StoryEngine:
             plan_prompt,
         )
 
-        # if trace is not None:
-        #     trace["PLAN"] = {
-        #         **plan_debug,
-        #         "state": state_snapshot,
-        #     }
         if trace is not None:
             trace["PLAN"] = plan_debug
 
-
-
         # -----------------------
-        # VALIDATE
+        # VALIDATE (with read-only tools)
         # -----------------------
 
         validate_prompt = build_validate_prompt(state, plan)
 
-        (verdict, notes, advance), validate_debug = self.steps["validate"].run(
-            self.adapter,
-            validate_prompt,
-        )
+        validate_tool_calls = []
+        validate_messages = [{"role": "user", "content": validate_prompt}]
 
-        # if trace is not None:
-        #     trace["VALIDATE"] = {
-        #         **validate_debug,
-        #         "state": state_snapshot,
-        #     }
+        max_validate_iterations = 3
+        final_validate_content = ""
+
+        for iteration in range(max_validate_iterations):
+            if self.adapter.verbose:
+                print(f"\n[TOOL] Validation iteration {iteration + 1}")
+            
+            response = self.adapter.request_with_tools(
+                stage="validate",
+                system_prompt=self.steps["validate"].system_prompt,
+                messages=validate_messages,
+                tools=VALIDATE_TOOLS  # Only read-only tools
+            )
+            
+            message = response.get("message", {})
+            tool_calls = message.get("tool_calls", [])
+            
+            if not tool_calls:
+                final_validate_content = self.adapter._extract_content(response)
+                if self.adapter.verbose:
+                    print(f"[TOOL] No more tool calls, got validation result")
+                break
+            
+            # Execute each tool call
+            for tool_call in tool_calls:
+                tool_name = tool_call["function"]["name"]
+                arguments = tool_call["function"]["arguments"]
+                if isinstance(arguments, str):
+                    try:
+                        arguments = json.loads(arguments)
+                    except json.JSONDecodeError:
+                        arguments = {}
+                
+                if self.adapter.verbose:
+                    print(f"[TOOL] Calling {tool_name} with {arguments}")
+                
+                result = execute_tool(tool_name, arguments, self.game_state, self.story)
+                validate_tool_calls.append({
+                    "name": tool_name,
+                    "arguments": arguments,
+                    "result": result
+                })
+                
+                if self.adapter.verbose:
+                    print(f"[TOOL] Result: {result}")
+            
+            validate_messages.append({
+                "role": "assistant",
+                "content": message.get("content", ""),
+                "tool_calls": tool_calls
+            })
+            
+            for idx, tool_call in enumerate(tool_calls):
+                validate_messages.append({
+                    "role": "tool",
+                    "content": json.dumps(validate_tool_calls[-(len(tool_calls) - idx)]["result"])
+                })
+
+        else:
+            # Max iterations - force final response
+            response = self.adapter.request_with_tools(
+                stage="validate",
+                system_prompt=self.steps["validate"].system_prompt + "\n\nProvide your validation verdict now.",
+                messages=validate_messages,
+                tools=[]
+            )
+            final_validate_content = self.adapter._extract_content(response)
+
+        # Parse the validation result
+        sections = parse_sections(final_validate_content, {"thoughts", "verdict", "notes", "advance"})
+        parsed_result = self.steps["validate"].parser(sections)
+        verdict, notes, advance = parsed_result
+        
+        # structure that matches the expected format with attempts array
+        validate_debug = {
+            "attempts": [{
+                "attempt": 1,
+                "prompt": validate_prompt,
+                "raw": final_validate_content,
+                "sections": sections,
+                "parsed": parsed_result,
+            }],
+            "tool_calls": validate_tool_calls
+        }
+
         if trace is not None:
             trace["VALIDATE"] = validate_debug
 
-        if advance:
-            self.beats.advance()
+        # -----------------------
+        # EXECUTE ACTIONS
+        # -----------------------
+
+        action_tool_calls = []
         
-        #rebuild state after beat changes
-        state = self._make_state(player_input, intent)
-        assert state.beat_current == self.beats.progress_text()
+        if self.adapter.verbose:
+            print(f"\n[ACTION] Executing actions based on intent and validation")
+        
+        # Only execute actions if validation approved
+        if verdict.lower() == "approve":
+            action = intent.get("action", "").lower()
+            targets = intent.get("targets", [])
+            
+            # Handle movement actions
+            if action == "move" and targets:
+                target = targets[0]
+                
+                if self.adapter.verbose:
+                    print(f"[ACTION] Attempting to move to {target}")
+                
+                result = execute_tool("move_to_location", {"location_key": target}, 
+                                    self.game_state, self.story)
+                
+                action_tool_calls.append({
+                    "name": "move_to_location",
+                    "arguments": {"location_key": target},
+                    "result": result
+                })
+                
+                if result.get("success"):
+                    new_location = result["new_location"]
+                    self.current_focus = [new_location]
+                    
+                    if self.adapter.verbose:
+                        print(f"[ACTION] Movement succeeded, updated focus to {new_location}")
+                    
+                    # Refresh active keys with new focus
+                    self.active_keys = self.active_manager.refresh(
+                        self.story,
+                        self.current_focus,
+                        beat_text=self.beats.current(),
+                    )
+                else:
+                    if self.adapter.verbose:
+                        print(f"[ACTION] Movement failed: {result.get('reason')}")
+            
+                # Other action types can be handled here in the future
+                # elif action == "take" and targets:
+                #     ...
+                # elif action == "use" and targets:
+                #     ...
+        
+        else:
+            if self.adapter.verbose:
+                print(f"[ACTION] Validation verdict was '{verdict}', skipping action execution")
 
         # -----------------------
-        # NARRATE
+        # REBUILD STATE WITH UPDATED GAME STATE
         # -----------------------
 
-        narrate_prompt = build_narrate_prompt(
-            state, plan, verdict, notes
-        )
+        if self.adapter.verbose:
+            print(f"\n[STATE] Rebuilding state with updated game state")
+            print(f"[STATE] Player location: {self.game_state.player_location}")
+            print(f"[STATE] Current focus: {self.current_focus}")
+            print(f"[STATE] Active keys: {sorted(self.active_keys)}")
 
+        state = self._make_state(player_input, intent)  # Fresh state with updated focus!
+
+        if trace is not None:
+            trace["STATE_AFTER_ACTION"] = build_state_snapshot()
+
+        # -----------------------
+        # NARRATE WITH UPDATED STATE
+        # -----------------------
+
+        narrate_prompt = build_narrate_prompt(state, plan, verdict, notes, action_tool_calls)
+
+        if self.adapter.verbose:
+            print(f"\n[NARRATE] Generating narrative with updated state")
+
+        # Simple narration - no tool calls needed (actions already executed)
         narrative, narrate_debug = self.steps["narrate"].run(
             self.adapter,
             narrate_prompt,
         )
 
-        # if trace is not None:
-        #     trace["NARRATE"] = {
-        #         **narrate_debug,
-        #         "state": state_snapshot,
-        #     }
         if trace is not None:
+            trace["ACTION_TOOLS"] = action_tool_calls
             trace["NARRATE"] = narrate_debug
-
 
         # -----------------------
         # COMMIT TURN
@@ -231,6 +383,8 @@ class StoryEngine:
             "beat": self.beats.current(),
             "active_keys": sorted(self.active_keys),
             "focus": self.current_focus,
+            "player_location": self.game_state.player_location,
+            "tool_calls": action_tool_calls,
         }
 
         if trace is not None:
@@ -251,8 +405,8 @@ class StoryEngine:
             beat_guide=", ".join(self.beats.beats),
             story_status=self.story_status,
             session_summary=self.summary.text(),
-            intent={},          # no intent yet
-            player_input="",    # no input yet
+            intent={},
+            player_input="",
         )
 
         prompt = build_intro_prompt(state)
@@ -266,9 +420,6 @@ class StoryEngine:
         self.summary.add("Intro", narrative)
 
         return {"ic": narrative, "recap": ""}
-
-
-
 
     # -----------------------
 

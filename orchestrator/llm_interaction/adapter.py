@@ -40,12 +40,14 @@ class LLMAdapter:
 
     # -------------------------------------------------
 
-    def request_text(self, stage: str, system_prompt: str, payload_text: str) -> str:
+    def request_text(self, stage: str, system_prompt: str, payload_text: str) -> tuple[str, list[dict]]:
         messages = self._build_messages(system_prompt, payload_text)
         options = self._stage_options(stage)
 
         if self.verbose:
             logger.info("[%s] request started", stage.upper())
+
+        attempt_history = []
 
         for attempt in range(1, self.max_attempts + 1):
             if self.verbose:
@@ -63,6 +65,12 @@ class LLMAdapter:
                 content = self._extract_raw_from_error(exc) or ""
 
             content = content.strip()
+            
+            attempt_history.append({
+                "attempt": attempt,
+                "content": content,
+                "success": bool(content)
+            })
 
             if content:
                 if self.verbose:
@@ -71,9 +79,12 @@ class LLMAdapter:
                         stage.upper(),
                         len(content),
                     )
-                return content
+                return content, attempt_history
 
             # empty → retry
+            if self.verbose:
+                print(f"[LLM-RETRY] Attempt {attempt} returned empty, retrying...")
+            
             messages.append(
                 {
                     "role": "system",
@@ -82,7 +93,6 @@ class LLMAdapter:
             )
 
         raise LLMError(f"Stage '{stage}' failed after {self.max_attempts} attempts.")
-
     # -------------------------------------------------
 
     def request_json(
@@ -201,6 +211,36 @@ class LLMAdapter:
                 if not line.startswith("```")
             ).strip()
         return text
+
+    # --------------------------------------------------
+
+    def request_with_tools(
+        self, 
+        stage: str, 
+        system_prompt: str, 
+        messages: list[dict],
+        tools: list[dict]
+    ) -> dict:
+        """
+        Makes a request that supports tool calling.
+        Returns the full response dict from ollama.
+        """
+        options = self._stage_options(stage)
+        
+        if self.verbose:
+            logger.info("[%s] tool-enabled request started", stage.upper())
+        
+        response = ollama.chat(
+            model=self.model,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                *messages
+            ],
+            tools=tools,
+            options=options,
+        )
+        
+        return response
 
 
 __all__ = ["LLMAdapter", "LLMError"]

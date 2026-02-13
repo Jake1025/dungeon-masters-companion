@@ -43,7 +43,38 @@ class LLMStep:
             if adapter.verbose:
                 print(f"[LLM] Step '{self.name}' — attempt {attempt_num}")
 
-            raw = adapter.request_text(self.name, self.system_prompt, payload_text)
+            try:
+                raw, adapter_attempts = adapter.request_text(self.name, self.system_prompt, payload_text)
+            except Exception as exc:
+                # Adapter-level failure (e.g., all retries exhausted with empty responses)
+                attempts.append({
+                    "attempt": attempt_num,
+                    "prompt": payload_text,
+                    "raw": "",
+                    "sections": {},
+                    "error": f"Adapter error: {exc}",
+                })
+                
+                if adapter.verbose:
+                    print(f"[STEP-RETRY] {self.name}: adapter error: {exc}")
+                
+                payload_text += (
+                    f"\n\n(Note: previous attempt failed: {exc}. "
+                    "Please provide a valid response.)"
+                )
+                continue
+            
+            # Record failed adapter attempts (empty responses)
+            for adapter_attempt in adapter_attempts[:-1]:  # All but the last one
+                if not adapter_attempt["success"]:
+                    attempts.append({
+                        "attempt": len(attempts) + 1,
+                        "prompt": payload_text,
+                        "raw": adapter_attempt.get("content", ""),
+                        "sections": {},
+                        "error": "Empty response from LLM",
+                    })
+            
             sections = parse_sections(raw, tags)
 
             try:
@@ -63,7 +94,7 @@ class LLMStep:
 
             except Exception as exc:
                 attempts.append({
-                    "attempt": attempt_num,
+                    "attempt": len(attempts) + 1,
                     "prompt": payload_text,
                     "raw": raw,
                     "sections": sections,
@@ -79,8 +110,9 @@ class LLMStep:
                 )
                 continue
 
+            # Success!
             attempts.append({
-                "attempt": attempt_num,
+                "attempt": len(attempts) + 1,
                 "prompt": payload_text,
                 "raw": raw,
                 "sections": sections,
@@ -90,8 +122,6 @@ class LLMStep:
             return parsed, {"attempts": attempts}
 
         raise LLMError(f"Step '{self.name}' failed after {self.max_attempts} attempts.")
-
-
 
 
 
@@ -135,10 +165,27 @@ def parse_sections(text: str, tags: set[str]) -> Dict[str, str]:
 # =========================
 
 def parse_intent(sections: Dict[str, str]) -> Dict[str, Any]:
-    action = sections.get("action", "").strip()
-    targets = [t.strip() for t in sections.get("targets", "").split(",") if t.strip()]
-    refusals = [t.strip() for t in sections.get("refusals", "").split(",") if t.strip()]
-    return {"action": action, "targets": targets, "refusals": refusals}
+    action = sections.get("action", "").strip().lower()
+    
+    valid_actions = {"move", "talk", "inspect", "take", "use", "wait", "attack", "meta_question", "other"}
+    if action not in valid_actions:
+        action = "other"
+    
+    targets_raw = sections.get("targets", "").strip()
+    targets = [t.strip() for t in targets_raw.split(",") if t.strip() and t.strip().lower() not in {"none", "empty", ""}]
+    
+    refusals_raw = sections.get("refusals", "").strip()
+    refusals = [t.strip() for t in refusals_raw.split(",") if t.strip() and t.strip().lower() not in {"none", "empty", ""}]
+    
+    implicit_move_raw = sections.get("implicit_move", "no").strip().lower()
+    implicit_move = implicit_move_raw.startswith("y")
+    
+    return {
+        "action": action, 
+        "targets": targets, 
+        "refusals": refusals,
+        "implicit_move": implicit_move
+    }
 
 
 def parse_focus(sections: Dict[str, str]) -> List[str]:
@@ -170,13 +217,27 @@ def validate_validation_step(sections: Dict[str, str]) -> None:
 
 
 def validate_narration_step(sections: Dict[str, str]) -> None:
+    """
+    FIX: Provide more detailed error message when narrative section is missing
+    to help the LLM understand what went wrong.
+    """
     narrative = sections.get("narrative", "")
 
     if not narrative:
-        raise ValueError("Missing Narrative section.")
+        # Check if there's raw text that might be narrative without the label
+        all_text = " ".join(sections.values())
+        if len(all_text) > 50:  # Has substantial content but wrong format
+            raise ValueError(
+                "Missing Narrative section. You wrote content but forgot the 'Narrative:' label. "
+                "You MUST start your narrative with 'Narrative:' exactly as shown in the format."
+            )
+        else:
+            raise ValueError(
+                "Missing Narrative section. You must provide a 'Narrative:' section with story prose."
+            )
 
     if re.search(r"\b1\)", narrative) or re.search(r"\b2\)", narrative):
-        raise ValueError("Narrative contains numbered choices.")
+        raise ValueError("Narrative contains numbered choices. Do not offer explicit choices to the player.")
 
 __all__ = [
     "LLMStep",
