@@ -3,7 +3,6 @@
 Export story.py DEFAULT_NODES + constants into JSON files.
 
 中文说明：
-- 你们小组现在的 story.py 已经引入 NodeType / tags / GameState。
 - 本脚本会“读取你们现有 story.py 的 DEFAULT_NODES / DEFAULT_START_KEYS / STARTING_STATE / BEAT_LIST”，
   然后输出到 orchestrator/world_state/data/ 下的一组 JSON。
 - 这样 story.py 就可以删掉巨大 DEFAULT_NODES，改为从 JSON 加载（更易维护）。
