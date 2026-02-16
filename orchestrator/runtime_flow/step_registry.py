@@ -21,10 +21,11 @@ def build_steps():
 
     return {
         "intent": LLMStep(
-            name="intent",
+            name="intent_parser",
             system_prompt=INTENT_PROMPT,
-            tags={"action", "targets", "refusals"},
+            tags={"action", "targets", "implicit_move", "refusals"},
             use_cot=False,
+            max_attempts=3,
             parser=parse_intent,
         ),
 

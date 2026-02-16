@@ -9,7 +9,7 @@ from typing import Any, Dict
 from .runtime_flow.pipeline import StoryEngine
 from .world_state.story import STARTING_STATE
 
-DEFAULT_MODEL = "gemma3:4b"
+DEFAULT_MODEL = "glm-4.7-flash:q8_0"
 DEFAULT_TRUNCATE_LIMIT = 200
 
 def truncate(text: str, limit: int = DEFAULT_TRUNCATE_LIMIT) -> str:
@@ -53,13 +53,34 @@ def print_llm_verbose(turn_number: int, trace: Dict[str, Any]) -> None:
         print("-" * 60)
 
     # -------------------------
+    # State AFTER ACTION (NEW)
+    # -------------------------
+    state_after_action = trace.get("STATE_AFTER_ACTION")
+    if state_after_action:
+        print("STATE SNAPSHOT (AFTER ACTION EXECUTION)")
+        print(f"Beat Current: {truncate(state_after_action.get('beat_current',''),120)}")
+        
+        scene = state_after_action.get("scene", {})
+        print("\nScene:")
+        print(f"Location/Focus: {scene.get('location_focus')}")
+        print(f"Active Nodes: {scene.get('active_nodes')}")
+        print("-" * 60)
+
+    # -------------------------
     # Steps
     # -------------------------
     for step_name, data in trace.items():
-        if step_name.startswith("STATE_"):
+        # Skip special entries
+        if step_name.startswith("STATE_") or step_name in {"TOOL_CALLS", "ACTION_TOOLS", "MOVEMENT_BLOCKED"}:
             continue
 
         print(f"[LLM] {step_name} STEP")
+
+        # Handle different data structures
+        if not isinstance(data, dict):
+            print(f"Unexpected data type: {type(data)}")
+            print("-" * 60)
+            continue
 
         attempts = data.get("attempts", [])
 
@@ -76,6 +97,7 @@ def print_llm_verbose(turn_number: int, trace: Dict[str, Any]) -> None:
             sections = attempt.get("sections", {})
             parsed = attempt.get("parsed")
             error = attempt.get("error")
+            error_details = attempt.get("error_details")
 
             print(f"\n--- Attempt {attempt_num} ---")
 
@@ -86,6 +108,15 @@ def print_llm_verbose(turn_number: int, trace: Dict[str, Any]) -> None:
             print("RAW:")
             print(truncate(raw.strip()) or "<empty>")
             print()
+
+            if error:
+                print("ERROR:")
+                print(error)
+                if error_details:
+                    print("\nERROR DETAILS:")
+                    for k, v in error_details.items():
+                        print(f"  {k}: {truncate(str(v), 200)}")
+                print()
 
             if sections:
                 print("SECTIONS:")
@@ -102,11 +133,66 @@ def print_llm_verbose(turn_number: int, trace: Dict[str, Any]) -> None:
                     print(truncate(str(parsed), 400))
                 print()
 
-            if error:
-                print("ERROR:")
-                print(error)
+        # Show tool calls for VALIDATE step
+        if step_name == "VALIDATE" and "tool_calls" in data:
+            tool_calls = data["tool_calls"]
+            if tool_calls:
+                print("\nVALIDATION TOOL CALLS:")
+                for idx, call in enumerate(tool_calls, 1):
+                    print(f"  {idx}. {call['name']}: {truncate(json.dumps(call['result']), 200)}")
                 print()
 
+        print("-" * 60)
+
+    # -------------------------
+    # Action Tools
+    # -------------------------
+    action_tools = trace.get("ACTION_TOOLS", [])
+    if action_tools:
+        print("[ACTION] TOOL EXECUTION")
+        print()
+        
+        if isinstance(action_tools, list):
+            if not action_tools:
+                print("No actions executed")
+            else:
+                for idx, call in enumerate(action_tools, 1):
+                    print(f"--- Tool Call {idx} ---")
+                    print(f"Function: {call.get('name', 'unknown')}")
+                    print(f"Arguments: {call.get('arguments', {})}")
+                    print(f"Result:")
+                    result = call.get('result', {})
+                    print(f"  Success: {result.get('success', False)}")
+                    print(f"  Reason: {result.get('reason', 'N/A')}")
+                    if 'new_location' in result:
+                        print(f"  New Location: {result.get('new_location')}")
+                    print()
+        else:
+            print(f"Unexpected ACTION_TOOLS format: {type(action_tools)}")
+        
+        print("-" * 60)
+
+    # -------------------------
+    # Movement Blocked Flag
+    # -------------------------
+    if trace.get("MOVEMENT_BLOCKED"):
+        print("[INFO] Movement was blocked - narration will re-describe current scene")
+        print("-" * 60)
+
+    # -------------------------
+    # Tool Calls (Old)
+    # -------------------------
+    tool_calls = trace.get("TOOL_CALLS", [])
+    if tool_calls:
+        print("[LLM] TOOL_CALLS (Legacy)")
+        print()
+        for idx, call in enumerate(tool_calls, 1):
+            print(f"--- Tool Call {idx} ---")
+            print(f"Function: {call['name']}")
+            print(f"Arguments: {call['arguments']}")
+            print(f"Result:")
+            print(truncate(json.dumps(call['result'], indent=2), 400))
+            print()
         print("-" * 60)
 
     # -------------------------
@@ -129,7 +215,6 @@ def print_llm_verbose(turn_number: int, trace: Dict[str, Any]) -> None:
             f"{truncate(scene.get('session_summary',''),120)}"
         )
     print(f"\n=============================== END OF TURN {turn_number} ================================\n")
-
 
 
 
