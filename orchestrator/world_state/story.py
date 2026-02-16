@@ -647,6 +647,11 @@ BEAT_LIST = [
 class StoryGraph:
     """Minimal lookup/describe helper for story nodes."""
 
+    _ALIASES = {
+        "bar": "Copper Cup",
+        "tavern": "Copper Cup",
+    }
+
     def __init__(
         self,
         nodes: Iterable[StoryNode] | None = None,
