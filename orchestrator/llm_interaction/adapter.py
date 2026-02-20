@@ -214,6 +214,49 @@ class LLMAdapter:
         return []
 
     @staticmethod
+    def _normalize_tool_calls(response: Any) -> list[dict[str, Any]]:
+        """
+        Convert model tool calls into a stable shape:
+        [{'id': str, 'name': str, 'arguments': dict, 'raw': dict}, ...]
+        """
+        normalized: list[dict[str, Any]] = []
+
+        for idx, call in enumerate(LLMAdapter._extract_tool_calls(response)):
+            if not isinstance(call, dict):
+                continue
+
+            function_payload = call.get("function")
+            if isinstance(function_payload, dict):
+                name = function_payload.get("name") or call.get("name") or ""
+                arguments = function_payload.get("arguments", {})
+            else:
+                name = call.get("name", "")
+                arguments = call.get("arguments", {})
+
+            parsed_arguments: dict[str, Any] = {}
+
+            if isinstance(arguments, str):
+                try:
+                    loaded = json.loads(arguments)
+                    if isinstance(loaded, dict):
+                        parsed_arguments = loaded
+                except json.JSONDecodeError:
+                    parsed_arguments = {}
+            elif isinstance(arguments, Mapping):
+                parsed_arguments = dict(arguments)
+
+            normalized.append(
+                {
+                    "id": call.get("id") or f"call_{idx}",
+                    "name": str(name),
+                    "arguments": parsed_arguments,
+                    "raw": call,
+                }
+            )
+
+        return normalized
+
+    @staticmethod
     def _build_callable_tool_executor(
         tools: Optional[Sequence[Union[Mapping[str, Any], Any, Callable]]],
     ) -> Optional[Callable[[str, Mapping[str, Any]], Any]]:
@@ -303,17 +346,161 @@ class LLMAdapter:
         if self.verbose:
             logger.info("[%s] tool-enabled request started", stage.upper())
         
-        response = ollama.chat(
-            model=self.model,
+        response = self._chat_with_retry(
             messages=[
                 {"role": "system", "content": system_prompt},
-                *messages
+                *messages,
             ],
-            tools=tools,
             options=options,
+            stage=stage,
+            tools=tools,
         )
         
         return response
+
+    # --------------------------------------------------
+
+    def run_tool_loop(
+        self,
+        *,
+        stage: str,
+        system_prompt: str,
+        messages: list[dict[str, Any]],
+        tools: Sequence[Mapping[str, Any]],
+        tool_executor: Optional[Callable[[str, Mapping[str, Any]], Any]] = None,
+        max_iterations: int = 10,
+        pre_tool_use: Optional[Callable[[str, Dict[str, Any]], Dict[str, Any]]] = None,
+        post_tool_use: Optional[Callable[[str, Dict[str, Any], Dict[str, Any]], Optional[str]]] = None,
+        stop_hook: Optional[Callable[[str, bool], Optional[str]]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Generic iterative model->tool->result loop.
+        Mirrors Copilot-style orchestration with optional hook controls.
+        """
+        max_iterations = max(1, max_iterations)
+        convo_messages: list[dict[str, Any]] = list(messages)
+        rounds: list[dict[str, Any]] = []
+        tool_trace: list[dict[str, Any]] = []
+        stop_hook_active = False
+
+        for iteration in range(1, max_iterations + 1):
+            response = self.request_with_tools(
+                stage=stage,
+                system_prompt=system_prompt,
+                messages=convo_messages,
+                tools=list(tools),
+            )
+
+            assistant_text = self._extract_content(response).strip()
+            tool_calls = self._normalize_tool_calls(response)
+
+            round_info: dict[str, Any] = {
+                "iteration": iteration,
+                "assistant_text": assistant_text,
+                "tool_calls": [
+                    {
+                        "id": call["id"],
+                        "name": call["name"],
+                        "arguments": call["arguments"],
+                    }
+                    for call in tool_calls
+                ],
+                "tool_results": [],
+                "stop_hook_active": stop_hook_active,
+            }
+            rounds.append(round_info)
+
+            if not tool_calls:
+                stop_reason = stop_hook(assistant_text, stop_hook_active) if stop_hook else None
+                if stop_reason:
+                    stop_hook_active = True
+                    round_info["stop_block_reason"] = stop_reason
+                    convo_messages.append(
+                        {
+                            "role": "user",
+                            "content": (
+                                "You were about to finish, but a stop hook blocked completion: "
+                                f"{stop_reason}"
+                            ),
+                        }
+                    )
+                    continue
+
+                convo_messages.append({"role": "assistant", "content": assistant_text})
+                return {
+                    "status": "completed",
+                    "final_answer": assistant_text,
+                    "rounds": rounds,
+                    "messages": convo_messages,
+                    "tool_calls": tool_trace,
+                }
+
+            convo_messages.append(
+                {
+                    "role": "assistant",
+                    "content": assistant_text,
+                    "tool_calls": [call["raw"] for call in tool_calls],
+                }
+            )
+
+            for call in tool_calls:
+                tool_name = call["name"]
+                arguments = call["arguments"]
+
+                if pre_tool_use:
+                    pre_result = pre_tool_use(tool_name, arguments) or {"allow": True}
+                else:
+                    pre_result = {"allow": True}
+
+                if not pre_result.get("allow", True):
+                    tool_payload: dict[str, Any] = {
+                        "ok": False,
+                        "error": pre_result.get("reason", "Blocked by pre_tool_use hook."),
+                    }
+                elif tool_executor is None:
+                    tool_payload = {
+                        "ok": False,
+                        "error": f"No tool executor configured for '{tool_name}'.",
+                    }
+                else:
+                    try:
+                        tool_result = tool_executor(tool_name, arguments)
+                        if isinstance(tool_result, dict):
+                            tool_payload = dict(tool_result)
+                        else:
+                            tool_payload = {"ok": True, "result": tool_result}
+                    except Exception as exc:
+                        tool_payload = {"ok": False, "error": str(exc)}
+
+                tool_entry = {
+                    "iteration": iteration,
+                    "name": tool_name,
+                    "arguments": arguments,
+                    "result": tool_payload,
+                }
+                round_info["tool_results"].append(tool_entry)
+                tool_trace.append(tool_entry)
+
+                convo_messages.append(
+                    {
+                        "role": "tool",
+                        "tool_name": tool_name,
+                        "content": json.dumps(tool_payload, separators=(",", ":"), ensure_ascii=True),
+                    }
+                )
+
+                if post_tool_use:
+                    post_note = post_tool_use(tool_name, arguments, tool_payload)
+                    if post_note:
+                        convo_messages.append({"role": "user", "content": f"Hook note: {post_note}"})
+
+        return {
+            "status": "max_iterations",
+            "final_answer": "Stopped due to max iterations before final response.",
+            "rounds": rounds,
+            "messages": convo_messages,
+            "tool_calls": tool_trace,
+        }
 
 
 __all__ = ["LLMAdapter", "LLMError"]

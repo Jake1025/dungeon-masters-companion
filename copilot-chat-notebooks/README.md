@@ -10,17 +10,22 @@ These notebooks are portable examples inspired by the tool-calling loop architec
   - Adds `session_start`, `pre_tool_use`, `post_tool_use`, and `stop` hook controls.
 - `03_dnd_dm_world_state_engine.ipynb`
   - Engine-style, multi-turn DM with persistent world state and trace output.
+- `04_dnd_skill_check_live_trace.ipynb`
+  - High-volume DnD skill-check loop with RNG tool calls and live, detailed tool trace output.
 
 ## Requirements
 
 - Python 3.10+
-- `requests`
-- Local Ollama server running at `http://localhost:11434`
-- A model available locally (default in notebooks is `llama3.1:8b-instruct`)
+- `ollama` Python package (already used by this repo's `LLMAdapter`)
+- Ollama server reachable by the `ollama` client
+  - Local default: `http://localhost:11434`
+  - Remote: set `OLLAMA_HOST=http://<host>:11434`
+- A model available locally (default in notebooks is `llama3.1:8b`)
 
 ## Notes
 
-- The notebooks use Ollama's tool format with JSON schema in `tools`.
+- The notebooks now call Ollama through `orchestrator.llm_interaction.adapter.LLMAdapter`.
+- They still use Ollama's tool format with JSON schema in `tools`.
 - Tool result messages are appended with:
   - `role: "tool"`
   - `tool_name: <tool name>`
