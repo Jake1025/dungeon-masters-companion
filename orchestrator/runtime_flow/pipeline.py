@@ -1,4 +1,9 @@
 from typing import Any, Dict, Sequence, Optional
+
+from pathlib import Path
+
+from ..world_state.persistence.state_store import StateStore
+
 from .conversation_log import History
 from ..world_state.story import StoryGraph, BEAT_LIST, STARTING_STATE
 from ..llm_interaction.adapter import LLMAdapter
@@ -17,14 +22,34 @@ from ..llm_interaction.prompt_builders import (
 )
 from ..world_state.story import create_initial_game_state, NodeType
 import json
-from ..world_state.tools import TOOL_DEFINITIONS, VALIDATE_TOOLS, execute_tool, move_to_location
+#from ..world_state.tools import TOOL_DEFINITIONS, VALIDATE_TOOLS, execute_tool, move_to_location
+from ..world_state.tools import TOOL_DEFINITIONS, VALIDATE_TOOLS, execute_tool
+
+
+def _repo_root_from_pipeline() -> Path:
+    """
+    EN: repo_root/orchestrator/runtime_flow/pipeline.py -> repo_root
+    中文：从 pipeline.py 推断仓库根目录
+    """
+    return Path(__file__).resolve().parents[2]
+
+
+def _default_world_state_path() -> Path:
+    """
+    EN: Default world_state.json -> <repo_root>/state/world_state.json
+    中文：默认 world_state.json 路径
+    """
+    repo_root = _repo_root_from_pipeline()
+    state_dir = repo_root / "state"
+    state_dir.mkdir(parents=True, exist_ok=True)
+    return state_dir / "world_state.json"
 
 class StoryEngine:
 
     def __init__(
         self,
         *,
-        model: str = "glm-4.7-flash:q8_0",
+        model: str = "qwen3:8B",
         story_graph: Optional[StoryGraph] = None,
         initial_keys: Optional[Sequence[str]] = None,
         beats: Optional[Sequence[str]] = None,
@@ -46,6 +71,9 @@ class StoryEngine:
         self.active_keys = set()
 
         self.game_state = create_initial_game_state(self.story)
+        # EN: Persistent "current world" snapshot store (atomic overwrite).
+        # 中文：世界“当前状态”快照存储（原子覆盖写）。
+        self.state_store = StateStore(_default_world_state_path())
 
         self.adapter = LLMAdapter(
             model=model,
@@ -159,24 +187,77 @@ class StoryEngine:
         if trace is not None:
             trace["INTENT"] = intent_debug
 
+        # -----------------------
         # Handle implicit_move by moving player (without changing intent)
+        # -----------------------
+
+        move_result: Optional[Dict[str, Any]] = None  # EN: always init | 中文：始终初始化避免 UnboundLocalError
+
         if intent.get("implicit_move") and intent.get("targets"):
             target = intent["targets"][0]
-            
-            # Check if target is a location
+
+            # EN: Only attempt implicit movement if target is a location.
+            # 中文：仅当目标确实是地点时才尝试 implicit move。
             target_node = self.story.get_node(target)
-            if target_node and target_node.node_type.value == "location":
-                # Check if player can move there
-                move_result = move_to_location(target, self.game_state, self.story)
-                
-                if move_result["success"]:
+            if target_node and target_node.node_type == NodeType.LOCATION:
+                # EN: Use execute_tool so we don't rely on direct import of move_to_location.
+                # 中文：统一走 execute_tool，避免 move_to_location 未导出导致 NameError。
+                move_result = execute_tool(
+                    "move_to_location",
+                    {"location_key": target, "auto_path": True},
+                    self.game_state,
+                    self.story,
+                )
+
+                if move_result.get("success"):
                     if self.adapter.verbose:
-                        print(f"[INTENT] Implicit move succeeded: moved to {target}")
-                    # Update focus immediately
-                    self.current_focus = [target]
+                        print(f"[INTENT] Implicit move succeeded: moved to {move_result.get('new_location')}")
+                    # EN: Use returned new_location to avoid alias/name mapping issues.
+                    # 中文：用返回的新地点名，避免别名/映射导致 focus 不一致。
+                    self.current_focus = [move_result.get("new_location", target)]
                 else:
                     if self.adapter.verbose:
-                        print(f"[INTENT] Implicit move failed: {move_result['reason']}")
+                        print(f"[INTENT] Implicit move failed: {move_result.get('reason')}")
+            else:
+                if self.adapter.verbose:
+                    if not target_node:
+                        print(f"[INTENT] Implicit move skipped: target '{target}' not found in story graph.")
+                    else:
+                        print(f"[INTENT] Implicit move skipped: target '{target}' is not a location ({target_node.node_type}).")
+        # -----------------------
+        # PERSIST WORLD SNAPSHOT (world_state.json)
+        # -----------------------
+        try:
+            # EN: Build a stable snapshot for reload/debug. Keep it deterministic.
+            # 中文：构建稳定的快照用于重载/调试，尽量保持字段确定性。
+            snapshot = {
+                "turn": self.turn_index,
+                "player": {
+                    "location": self.game_state.player_location,
+                    "inventory": list(getattr(self.game_state, "inventory", [])) if hasattr(self.game_state, "inventory") else [],
+                },
+                "focus": list(self.current_focus),
+                "active_keys": sorted(self.active_keys),
+                "discovered_keys": sorted(getattr(self.game_state, "discovered_keys", set())),
+                "npc_locations": dict(getattr(self.game_state, "npc_locations", {})),
+                "quest_flags": dict(getattr(self.game_state, "quest_flags", {})),
+                # EN: Keep a short tail for context; do NOT store huge traces here.
+                # 中文：保留少量对话尾巴；不要把 verbose trace 全塞进来。
+                "history_tail": self.history.as_text(limit=12),
+                "session_summary": self.summary.text(),
+            }
+
+            # EN: Overwrite save (atomic). Let StateStore handle .tmp + replace.
+            # 中文：原子覆盖写。StateStore 内部会 .tmp + replace。
+            self.state_store.apply_update(
+                patch_fn=lambda _before: snapshot,
+                event_id=str(self.turn_index),
+                bump_version=True,
+            )
+        except Exception as e:
+            if self.adapter.verbose:
+                print(f"[STATE_STORE] Failed to write world_state.json: {e}")
+
 
         # -----------------------
         # REFRESH ACTIVE KEYS
@@ -337,12 +418,21 @@ class StoryEngine:
                 if self.adapter.verbose:
                     print(f"[ACTION] Attempting to move to {target}")
                 
-                result = execute_tool("move_to_location", {"location_key": target}, 
-                                    self.game_state, self.story)
+               # result = execute_tool("move_to_location", {"location_key": target}, 
+               #                     self.game_state, self.story)
+                qf = self.game_state.quest_flags if isinstance(self.game_state.quest_flags, dict) else {}
+                auto_path = bool(qf.get("auto_path", True))
+
+                result = execute_tool(
+                    "move_to_location",
+                    {"location_key": target, "auto_path": auto_path},
+                    self.game_state,
+                    self.story
+                )
                 
                 action_tool_calls.append({
                     "name": "move_to_location",
-                    "arguments": {"location_key": target},
+                    "arguments": {"location_key": target, "auto_path": auto_path},
                     "result": result
                 })
                 

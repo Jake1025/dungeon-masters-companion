@@ -1,0 +1,30 @@
+{
+  "turn": 0,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bronze Fountain Coin",
+    "Copper Cup",
+    "East Alley",
+    "Guard's Lost Signet",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "South Bridge",
+    "Temple of the Tide",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks",
+    "Wizard's House"
+  ],
+  "focus": [
+    "Town Square"
+  ],
+  "session_summary": "Intro: The Town Square hums with a quiet dread as dusk settles over the cobblestones. Lanterns flicker to life, casting long shadows across the worn stone. A fisherman mutters about \"blood on the cobblestones near the well,\" while a baker avoids eye contact with the woman beside him. The air smells of brine and something metallic. You notice a faint, dark smear near the Bronze Fountain Coin, though no one else seems to. A child\u2019s laughter rings out, then dies into silence. As you move through the square, the weight of unseen eyes presses against your back\u2014until a voice cuts through the hush. \"You\u2019re here to look, aren\u2019t you?\"",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The Town Square hums with a quiet dread as dusk settles over the cobblestones. Lanterns flicker to life, casting long shadows across the worn stone. A fisherman mutters about \"blood on the cobblestones near the well,\" while a baker avoids eye contact with the woman beside him. The air smells of brine and something metallic. You notice a faint, dark smear near the Bronze Fountain Coin, though no one else seems to. A child\u2019s laughter rings out, then dies into silence. As you move through the square, the weight of unseen eyes presses against your back\u2014until a voice cuts through the hush. \"You\u2019re here to look, aren\u2019t you?\""
+    }
+  ]
+}

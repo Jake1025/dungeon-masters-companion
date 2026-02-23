@@ -9,7 +9,7 @@ from typing import Any, Dict
 from .runtime_flow.pipeline import StoryEngine
 from .world_state.story import STARTING_STATE
 
-DEFAULT_MODEL = "glm-4.7-flash:q8_0"
+DEFAULT_MODEL = "qwen3:8b"
 DEFAULT_TRUNCATE_LIMIT = 200
 
 def truncate(text: str, limit: int = DEFAULT_TRUNCATE_LIMIT) -> str:

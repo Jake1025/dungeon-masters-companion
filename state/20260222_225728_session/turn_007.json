@@ -1,0 +1,82 @@
+{
+  "turn": 7,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Cracked Spyglass",
+    "Deckhand Finn",
+    "Dockmaster Hara",
+    "Docks",
+    "Fishermen's Shacks",
+    "Frayed Mooring Rope",
+    "Harbor Gate",
+    "Town Square",
+    "Warehouse Row"
+  ],
+  "focus": [
+    "Docks"
+  ],
+  "session_summary": "Intro: The town square is a patchwork of shadows and half-light, the fading sun casting long, jagged silhouettes across cobblestones slick with seaweed. The air smells of salt and something older\u2014burnt wood, maybe, or the faint metallic tang of iron. A few townsfolk linger near the Bronze Fountain, their faces etched with quiet dread. A fisherman mutters about \u201cblood on the stones\u201d as he tosses his net, while a mother tucks a child closer, her eyes darting toward the East Alley. You notice a smear of dark residue near the base of the fountain, faint but unmistakable. As you step closer, a voice cuts through the hush. \u201cYou\u2019re here to look, aren\u2019t you?\u201d A lumberjack stands near the Market Stalls, his hands calloused, his eyes wild. \u201cThe Wizard\u2019s done this. But he\u2019s not the one you should be afraid of.\u201d\nRecap: The Old Shrine lies beyond reach from here, its path obscured or sealed. The bloodstains near the Bronze Fountain remain, their origin still a mystery. Mitch\u2019s warning lingers in the air\u2014the Wizard\u2019s name is spoken in hushed tones, a shadow over the square. You step back from the fountain\u2019s edge, the smear of dark residue glinting faintly in the fading light. The townsfolk\u2019s uneasy whispers swirl around you, and the weight of unseen danger presses against the edges of the square.\nRecap: The Docks exhale the scent of brine and decay, ropes fraying at the edges of the world. Your boots crunch over splintered wood as you scan the horizon\u2014ships hulking in the distance, their shadows stretching toward the bloodstains that linger near the harbor\u2019s edge. A Fishermen\u2019s Shack looms to your left, its windows dark, while the Harbor Gate stands ajar, as if waiting for someone to push it open. The air hums with tension, a silent question: *What\u2019s behind the stains?* You notice a frayed mooring rope dangling near the water\u2019s edge, its knots loose, as though something\u2014or someone\u2014had been tied to it and vanished. The Wizard\u2019s name flickers in your mind, a warning half-remembered. Step forward, and the docks will answer.\nRecap: The Harbor Gate creaks open, its splintered wood groaning as if exhaling the weight of secrets. Beyond it, the docks stretch into a haze of salt and shadow, the air thick with the brine of the sea and the faint metallic tang of something older. Your boots crunch over loose planks as you step into the half-light, where the bloodstains near the harbor\u2019s edge pulse faintly, as though still wet. A frayed mooring rope dangles from a rusted cleat, its knots loose and uneven\u2014like it was cut free in a hurry. The gate itself seems to lean inward, as though waiting to be pushed further open. Somewhere behind you, the town square hums with hushed whispers, but here, the silence is sharp, a blade against your ribs. The Wizard\u2019s name flickers in your mind, a warning half-remembered. Step forward, and the docks will answer.\nRecap: The Old Shrine lies beyond reach from here, its path sealed or obscured. The bloodstains near the harbor\u2019s edge pulse faintly, as though still wet, while the frayed mooring rope dangles from a rusted cleat, its knots loose. The Harbor Gate groans under your weight, its splintered wood leaning inward like a breath held too long. The Wizard\u2019s name flickers in your mind\u2014a warning, a shadow. Step forward, and the docks will answer. But the shrine\u2026 it remains just beyond the edge of what you can grasp.\nRecap: The Town Square hums with a restless energy, the last light of dusk bleeding into the bruised hues of twilight. Shadows stretch long over the cobblestones, pooling around the Bronze Fountain where dark stains linger, their edges faintly glowing as though seeping from the earth itself. A chill skates through the air, sharp and unspoken, as if the square holds its breath. Nearby, the Market Stalls\u2019 flickering lanterns cast wavering light on the faces of townsfolk who avoid eye contact, their murmurs blending with the creak of the Harbor Gate\u2019s splintered frame. Somewhere beyond the square, the East Alley yawns like a forgotten wound, its path veiled in mist. You feel it now\u2014the weight of unseen eyes, the echo of a name half-remembered: *Wizard*. The bloodstains pulse, faintly, as if waiting. What will you follow?\nRecap: The South Bridge shudders under your weight, its planks groaning like a creature half-awake. Mist clings to the water\u2019s edge, curling around the faint, pulsing stains that bleed into the darkened river\u2014older than the docks, older than the square. A figure leans against the railing here, their silhouette sharp against the twilight: Bridge Watcher Sol, arms crossed, eyes flicking between you and the water. Their voice is a gravelly whisper when they speak. \u201cBlood\u2019s been here longer than the tide. Some say the Wizard\u2019s hand.\u201d Beyond them, the Riverside Path slinks into the fog, its path obscured by willow branches swaying as if stirred by unseen fingers. The bridge holds its breath. What will you follow?\nRecap: The Docks exhale a slow, damp breath, the air thick with salt and something older\u2014something metallic, like blood drying in the sun. Your boots crunch over splintered planks as you stand where the bloodstains pulse faintly, their edges glowing like wet ink. A frayed mooring rope dangles from a rusted cleat, its knots loose, as though severed in haste. The Harbor Gate groans behind you, its splintered wood leaning inward, waiting. A shadow lingers at the edge of your vision\u2014the Wizard\u2019s name, a whisper of warning. But ahead, the South Bridge shudders, its path sealed. You cannot reach it from here. What will you follow?",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The town square is a patchwork of shadows and half-light, the fading sun casting long, jagged silhouettes across cobblestones slick with seaweed. The air smells of salt and something older\u2014burnt wood, maybe, or the faint metallic tang of iron. A few townsfolk linger near the Bronze Fountain, their faces etched with quiet dread. A fisherman mutters about \u201cblood on the stones\u201d as he tosses his net, while a mother tucks a child closer, her eyes darting toward the East Alley. You notice a smear of dark residue near the base of the fountain, faint but unmistakable. As you step closer, a voice cuts through the hush. \u201cYou\u2019re here to look, aren\u2019t you?\u201d A lumberjack stands near the Market Stalls, his hands calloused, his eyes wild. \u201cThe Wizard\u2019s done this. But he\u2019s not the one you should be afraid of.\u201d"
+    },
+    {
+      "role": "player",
+      "content": "go to the Old Shrine"
+    },
+    {
+      "role": "narrator",
+      "content": "The Old Shrine lies beyond reach from here, its path obscured or sealed. The bloodstains near the Bronze Fountain remain, their origin still a mystery. Mitch\u2019s warning lingers in the air\u2014the Wizard\u2019s name is spoken in hushed tones, a shadow over the square. You step back from the fountain\u2019s edge, the smear of dark residue glinting faintly in the fading light. The townsfolk\u2019s uneasy whispers swirl around you, and the weight of unseen danger presses against the edges of the square."
+    },
+    {
+      "role": "player",
+      "content": "go to Docks"
+    },
+    {
+      "role": "narrator",
+      "content": "The Docks exhale the scent of brine and decay, ropes fraying at the edges of the world. Your boots crunch over splintered wood as you scan the horizon\u2014ships hulking in the distance, their shadows stretching toward the bloodstains that linger near the harbor\u2019s edge. A Fishermen\u2019s Shack looms to your left, its windows dark, while the Harbor Gate stands ajar, as if waiting for someone to push it open. The air hums with tension, a silent question: *What\u2019s behind the stains?* You notice a frayed mooring rope dangling near the water\u2019s edge, its knots loose, as though something\u2014or someone\u2014had been tied to it and vanished. The Wizard\u2019s name flickers in your mind, a warning half-remembered. Step forward, and the docks will answer."
+    },
+    {
+      "role": "player",
+      "content": "go to Harbor Gate"
+    },
+    {
+      "role": "narrator",
+      "content": "The Harbor Gate creaks open, its splintered wood groaning as if exhaling the weight of secrets. Beyond it, the docks stretch into a haze of salt and shadow, the air thick with the brine of the sea and the faint metallic tang of something older. Your boots crunch over loose planks as you step into the half-light, where the bloodstains near the harbor\u2019s edge pulse faintly, as though still wet. A frayed mooring rope dangles from a rusted cleat, its knots loose and uneven\u2014like it was cut free in a hurry. The gate itself seems to lean inward, as though waiting to be pushed further open. Somewhere behind you, the town square hums with hushed whispers, but here, the silence is sharp, a blade against your ribs. The Wizard\u2019s name flickers in your mind, a warning half-remembered. Step forward, and the docks will answer."
+    },
+    {
+      "role": "player",
+      "content": "go to the Old Shrine"
+    },
+    {
+      "role": "narrator",
+      "content": "The Old Shrine lies beyond reach from here, its path sealed or obscured. The bloodstains near the harbor\u2019s edge pulse faintly, as though still wet, while the frayed mooring rope dangles from a rusted cleat, its knots loose. The Harbor Gate groans under your weight, its splintered wood leaning inward like a breath held too long. The Wizard\u2019s name flickers in your mind\u2014a warning, a shadow. Step forward, and the docks will answer. But the shrine\u2026 it remains just beyond the edge of what you can grasp."
+    },
+    {
+      "role": "player",
+      "content": "back to Town Square"
+    },
+    {
+      "role": "narrator",
+      "content": "The Town Square hums with a restless energy, the last light of dusk bleeding into the bruised hues of twilight. Shadows stretch long over the cobblestones, pooling around the Bronze Fountain where dark stains linger, their edges faintly glowing as though seeping from the earth itself. A chill skates through the air, sharp and unspoken, as if the square holds its breath. Nearby, the Market Stalls\u2019 flickering lanterns cast wavering light on the faces of townsfolk who avoid eye contact, their murmurs blending with the creak of the Harbor Gate\u2019s splintered frame. Somewhere beyond the square, the East Alley yawns like a forgotten wound, its path veiled in mist. You feel it now\u2014the weight of unseen eyes, the echo of a name half-remembered: *Wizard*. The bloodstains pulse, faintly, as if waiting. What will you follow?"
+    },
+    {
+      "role": "player",
+      "content": "South Bridge"
+    },
+    {
+      "role": "narrator",
+      "content": "The South Bridge shudders under your weight, its planks groaning like a creature half-awake. Mist clings to the water\u2019s edge, curling around the faint, pulsing stains that bleed into the darkened river\u2014older than the docks, older than the square. A figure leans against the railing here, their silhouette sharp against the twilight: Bridge Watcher Sol, arms crossed, eyes flicking between you and the water. Their voice is a gravelly whisper when they speak. \u201cBlood\u2019s been here longer than the tide. Some say the Wizard\u2019s hand.\u201d Beyond them, the Riverside Path slinks into the fog, its path obscured by willow branches swaying as if stirred by unseen fingers. The bridge holds its breath. What will you follow?"
+    },
+    {
+      "role": "player",
+      "content": "go to Docks"
+    },
+    {
+      "role": "narrator",
+      "content": "The Docks exhale a slow, damp breath, the air thick with salt and something older\u2014something metallic, like blood drying in the sun. Your boots crunch over splintered planks as you stand where the bloodstains pulse faintly, their edges glowing like wet ink. A frayed mooring rope dangles from a rusted cleat, its knots loose, as though severed in haste. The Harbor Gate groans behind you, its splintered wood leaning inward, waiting. A shadow lingers at the edge of your vision\u2014the Wizard\u2019s name, a whisper of warning. But ahead, the South Bridge shudders, its path sealed. You cannot reach it from here. What will you follow?"
+    }
+  ]
+}

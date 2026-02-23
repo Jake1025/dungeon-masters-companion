@@ -1,0 +1,25 @@
+{
+  "turn": 0,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bronze Fountain Coin",
+    "Copper Cup",
+    "East Alley",
+    "Guard's Lost Signet",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "South Bridge",
+    "Temple of the Tide",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks",
+    "Wizard's House"
+  ],
+  "focus": [
+    "Town Square"
+  ],
+  "session_summary": "",
+  "story_status": "",
+  "history": []
+}

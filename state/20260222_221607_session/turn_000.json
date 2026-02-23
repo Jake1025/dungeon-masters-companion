@@ -1,0 +1,30 @@
+{
+  "turn": 0,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bronze Fountain Coin",
+    "Copper Cup",
+    "East Alley",
+    "Guard's Lost Signet",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "South Bridge",
+    "Temple of the Tide",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks",
+    "Wizard's House"
+  ],
+  "focus": [
+    "Town Square"
+  ],
+  "session_summary": "Intro: The Town Square is bathed in the amber glow of dusk, the air thick with the scent of rain-soaked wood and the faint metallic tang of blood. Townsfolk linger in clusters, their conversations hushed, eyes darting toward the cobblestones where rumors say bloodstains bloom like dark roses each morning\u2014no bodies, no explanations. A child\u2019s laughter echoes from the Market Stalls, but it\u2019s drowned by the low murmur of speculation. Near the Bronze Fountain Coin, a fisherman mutters about \u201cthe Wizard\u2019s hand,\u201d while a blacksmith\u2019s wife clutches a copper cup, her knuckles white. The square feels watched, as if the very stones remember what the townsfolk forget. You step deeper, the weight of unseen eyes pressing against your back.",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The Town Square is bathed in the amber glow of dusk, the air thick with the scent of rain-soaked wood and the faint metallic tang of blood. Townsfolk linger in clusters, their conversations hushed, eyes darting toward the cobblestones where rumors say bloodstains bloom like dark roses each morning\u2014no bodies, no explanations. A child\u2019s laughter echoes from the Market Stalls, but it\u2019s drowned by the low murmur of speculation. Near the Bronze Fountain Coin, a fisherman mutters about \u201cthe Wizard\u2019s hand,\u201d while a blacksmith\u2019s wife clutches a copper cup, her knuckles white. The square feels watched, as if the very stones remember what the townsfolk forget. You step deeper, the weight of unseen eyes pressing against your back."
+    }
+  ]
+}

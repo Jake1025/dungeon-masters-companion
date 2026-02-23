@@ -1,0 +1,34 @@
+{
+  "turn": 1,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Cracked Spyglass",
+    "Deckhand Finn",
+    "Dockmaster Hara",
+    "Docks",
+    "Fishermen's Shacks",
+    "Frayed Mooring Rope",
+    "Harbor Gate",
+    "Town Square",
+    "Warehouse Row"
+  ],
+  "focus": [
+    "Docks"
+  ],
+  "session_summary": "Intro: The town square hums with the weight of unspoken fears. Dusk paints the sky in bruised purples, and the cobblestones gleam faintly under the last light. A group of fishermen huddle near the Bronze Fountain, their voices low as they point at the faint stains pooling near the base of the statue. A woman in a frayed apron mutters about \"cleaning it up\" before vanishing into the Market Stalls. The air carries the tang of seaweed and the faint scent of iron. A child\u2019s laughter rings out, but it\u2019s met with uneasy glances. The Wizard\u2019s House looms at the edge of the square, its windows dark, while the Harbor Gate stands ajar, as if waiting. What do you notice?\nRecap: The Docks exhale the salt of a restless sea, their wooden planks groaning under the weight of unspoken tension. A frayed mooring rope dangles from a rusted post, its fibers streaked with something dark and unidentifiable. Nearby, Deckhand Finn leans against a crate, his boots splattered with brine and something else\u2014something that glints faintly in the fading light. The Harbor Gate stands ajar, its hinges whispering secrets to the wind. Beyond it, the water churns, as if stirred by a hand unseen. You notice the stain hasn\u2019t reached these shores yet, but the air smells of iron and unfinished business. What do you do?",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The town square hums with the weight of unspoken fears. Dusk paints the sky in bruised purples, and the cobblestones gleam faintly under the last light. A group of fishermen huddle near the Bronze Fountain, their voices low as they point at the faint stains pooling near the base of the statue. A woman in a frayed apron mutters about \"cleaning it up\" before vanishing into the Market Stalls. The air carries the tang of seaweed and the faint scent of iron. A child\u2019s laughter rings out, but it\u2019s met with uneasy glances. The Wizard\u2019s House looms at the edge of the square, its windows dark, while the Harbor Gate stands ajar, as if waiting. What do you notice?"
+    },
+    {
+      "role": "player",
+      "content": "move me to Docks"
+    },
+    {
+      "role": "narrator",
+      "content": "The Docks exhale the salt of a restless sea, their wooden planks groaning under the weight of unspoken tension. A frayed mooring rope dangles from a rusted post, its fibers streaked with something dark and unidentifiable. Nearby, Deckhand Finn leans against a crate, his boots splattered with brine and something else\u2014something that glints faintly in the fading light. The Harbor Gate stands ajar, its hinges whispering secrets to the wind. Beyond it, the water churns, as if stirred by a hand unseen. You notice the stain hasn\u2019t reached these shores yet, but the air smells of iron and unfinished business. What do you do?"
+    }
+  ]
+}

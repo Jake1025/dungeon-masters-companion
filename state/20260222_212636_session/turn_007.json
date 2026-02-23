@@ -1,0 +1,79 @@
+{
+  "turn": 7,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Fishmonger Talo",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "Spice Seller Nima",
+    "Town Square"
+  ],
+  "focus": [
+    "Market Stalls"
+  ],
+  "session_summary": "Intro: The town square is bathed in the amber glow of dusk, the air thick with the scent of damp stone and burning tallow. Townsfolk move with a hushed urgency, their faces etched with exhaustion. A fisherman mutters about \u201cblood on the cobblestones near the well,\u201d while a merchant\u2019s wife clutches her apron, her eyes darting toward the east alley. The Bronze Fountain Coin glints in the fading light, and a Copper Cup rests on a market stall, its rim smeared with something dark. You feel the weight of unspoken secrets in the breeze\u2014rumors of stains that vanish by dawn, of a Wizard who walks the streets unseen. The square hums with tension, and somewhere in its shadows, a lumberjack\u2019s plea awaits.\nRecap: The Town Square feels heavier now, as if the dusk has swallowed the light entirely. The air carries a metallic tang\u2014iron, perhaps, or something older\u2014that clings to your sleeves. Near the eastern edge, the Harbor Gate looms beyond a tangle of shadows, its stone archway worn by time and tide. A fisherman\u2019s voice echoes again, this time louder, about \u201cblood on the stones\u201d near the well. The Market Stalls hum with hushed whispers, and the East Alley seems to pulse with a different kind of urgency. Somewhere, the Wizard\u2019s name is spoken in furtive tones, a specter weaving through the square\u2019s edges. What do you notice first?\nRecap: The Market Stalls buzz with a restless energy, their wooden counters slick with condensation from the evening air. A Copper Cup sits abandoned on a stall, its rim smeared with something dark and viscous, though the vendor insists it\u2019s \u201cjust wine from the east.\u201d Nearby, a fisherman\u2019s voice cuts through the chatter, his words urgent: \u201cThe well\u2019s stones are stained red, but by dawn, it\u2019s gone\u2014like it was never there.\u201d Your gaze drifts toward the East Alley, where shadows cling longer than they should, and a faint whisper of a name\u2014*Wizard*\u2014fades into the murmur of the crowd. The square\u2019s unease lingers, but here, the scent of salt and spice masks something older, something waiting. What catches your eye first?\nRecap: The East Alley remains just beyond reach, its shadows clinging to the edges of your vision like an unspoken warning. The Market Stalls\u2019 hum persists, but your attention is drawn to the faint smear on the Copper Cup and the fisherman\u2019s muttered tales of blood on the well\u2019s stones. The air here feels thicker, as if the square itself holds its breath\u2014waiting for someone to follow the whispers of the Wizard\u2019s name into the dark.\nRecap: The East Alley remains a shadowed threshold, its mouth sealed by the weight of unspoken fears. Beyond it, the Market Stalls\u2019 clamor fades into the metallic tang of damp stone and something older\u2014something waiting. The Old Shrine lies beyond reach, its whispers drowned by the square\u2019s unease. A fisherman\u2019s voice rises again, urgent: \u201cThe Wizard walks the streets, and his hand leaves no bodies, only blood.\u201d The air thickens. What do you notice first?\nRecap: The East Alley remains a shadowed threshold, its mouth sealed by the weight of unspoken fears. The Market Stalls\u2019 clamor fades into the metallic tang of damp stone and something older\u2014something waiting. A fisherman\u2019s voice rises again, urgent: \u201cThe Wizard walks the streets, and his hand leaves no bodies, only blood.\u201d Your fingers brush the dark smear on the Copper Cup, now dry but still clinging to the wood like a forgotten sigil. The square\u2019s unease thickens, and somewhere beyond the alley\u2019s edge, a name is whispered\u2014*Wizard*\u2014before vanishing into the crowd. What do you notice first?\nRecap: The Docks remain beyond reach, their shadowed expanse sealed by the East Alley\u2019s unyielding edge. You stand at the heart of the Market Stalls, where the air hums with the clatter of stalls and the briny tang of the sea. A fisherman\u2019s voice rises again, sharp and urgent: \u201cThe well\u2019s stones bled, but no body was found\u2014only a whisper of the Wizard\u2019s name.\u201d Your fingers trace the dark smear on the Copper Cup, now dry but still clinging like a forgotten sigil. The square holds its breath, waiting. What do you notice first?\nRecap: The East Alley looms ahead, its shadowed mouth a threshold you cannot cross. The Docks remain beyond reach, sealed by the alley\u2019s unyielding edge. You stand at the heart of the Market Stalls, where the air hums with the clatter of stalls and the briny tang of the sea. A fisherman\u2019s voice cuts through the din: \u201cThe well\u2019s stones bled, but no body was found\u2014only a whisper of the Wizard\u2019s name.\u201d Your fingers trace the dark smear on the Copper Cup, now dry but still clinging like a forgotten sigil. The square holds its breath, waiting. What do you notice first?",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The town square is bathed in the amber glow of dusk, the air thick with the scent of damp stone and burning tallow. Townsfolk move with a hushed urgency, their faces etched with exhaustion. A fisherman mutters about \u201cblood on the cobblestones near the well,\u201d while a merchant\u2019s wife clutches her apron, her eyes darting toward the east alley. The Bronze Fountain Coin glints in the fading light, and a Copper Cup rests on a market stall, its rim smeared with something dark. You feel the weight of unspoken secrets in the breeze\u2014rumors of stains that vanish by dawn, of a Wizard who walks the streets unseen. The square hums with tension, and somewhere in its shadows, a lumberjack\u2019s plea awaits."
+    },
+    {
+      "role": "player",
+      "content": "move me to the Gates"
+    },
+    {
+      "role": "narrator",
+      "content": "The Town Square feels heavier now, as if the dusk has swallowed the light entirely. The air carries a metallic tang\u2014iron, perhaps, or something older\u2014that clings to your sleeves. Near the eastern edge, the Harbor Gate looms beyond a tangle of shadows, its stone archway worn by time and tide. A fisherman\u2019s voice echoes again, this time louder, about \u201cblood on the stones\u201d near the well. The Market Stalls hum with hushed whispers, and the East Alley seems to pulse with a different kind of urgency. Somewhere, the Wizard\u2019s name is spoken in furtive tones, a specter weaving through the square\u2019s edges. What do you notice first?"
+    },
+    {
+      "role": "player",
+      "content": "move me to the Market Stalls"
+    },
+    {
+      "role": "narrator",
+      "content": "The Market Stalls buzz with a restless energy, their wooden counters slick with condensation from the evening air. A Copper Cup sits abandoned on a stall, its rim smeared with something dark and viscous, though the vendor insists it\u2019s \u201cjust wine from the east.\u201d Nearby, a fisherman\u2019s voice cuts through the chatter, his words urgent: \u201cThe well\u2019s stones are stained red, but by dawn, it\u2019s gone\u2014like it was never there.\u201d Your gaze drifts toward the East Alley, where shadows cling longer than they should, and a faint whisper of a name\u2014*Wizard*\u2014fades into the murmur of the crowd. The square\u2019s unease lingers, but here, the scent of salt and spice masks something older, something waiting. What catches your eye first?"
+    },
+    {
+      "role": "player",
+      "content": "go to East Alley"
+    },
+    {
+      "role": "narrator",
+      "content": "The East Alley remains just beyond reach, its shadows clinging to the edges of your vision like an unspoken warning. The Market Stalls\u2019 hum persists, but your attention is drawn to the faint smear on the Copper Cup and the fisherman\u2019s muttered tales of blood on the well\u2019s stones. The air here feels thicker, as if the square itself holds its breath\u2014waiting for someone to follow the whispers of the Wizard\u2019s name into the dark."
+    },
+    {
+      "role": "player",
+      "content": "go to Old Shrine"
+    },
+    {
+      "role": "narrator",
+      "content": "The East Alley remains a shadowed threshold, its mouth sealed by the weight of unspoken fears. Beyond it, the Market Stalls\u2019 clamor fades into the metallic tang of damp stone and something older\u2014something waiting. The Old Shrine lies beyond reach, its whispers drowned by the square\u2019s unease. A fisherman\u2019s voice rises again, urgent: \u201cThe Wizard walks the streets, and his hand leaves no bodies, only blood.\u201d The air thickens. What do you notice first?"
+    },
+    {
+      "role": "player",
+      "content": "move me to Docks"
+    },
+    {
+      "role": "narrator",
+      "content": "The East Alley remains a shadowed threshold, its mouth sealed by the weight of unspoken fears. The Market Stalls\u2019 clamor fades into the metallic tang of damp stone and something older\u2014something waiting. A fisherman\u2019s voice rises again, urgent: \u201cThe Wizard walks the streets, and his hand leaves no bodies, only blood.\u201d Your fingers brush the dark smear on the Copper Cup, now dry but still clinging to the wood like a forgotten sigil. The square\u2019s unease thickens, and somewhere beyond the alley\u2019s edge, a name is whispered\u2014*Wizard*\u2014before vanishing into the crowd. What do you notice first?"
+    },
+    {
+      "role": "player",
+      "content": "move me to Docks"
+    },
+    {
+      "role": "narrator",
+      "content": "The Docks remain beyond reach, their shadowed expanse sealed by the East Alley\u2019s unyielding edge. You stand at the heart of the Market Stalls, where the air hums with the clatter of stalls and the briny tang of the sea. A fisherman\u2019s voice rises again, sharp and urgent: \u201cThe well\u2019s stones bled, but no body was found\u2014only a whisper of the Wizard\u2019s name.\u201d Your fingers trace the dark smear on the Copper Cup, now dry but still clinging like a forgotten sigil. The square holds its breath, waiting. What do you notice first?"
+    },
+    {
+      "role": "player",
+      "content": "move me to Docks"
+    },
+    {
+      "role": "narrator",
+      "content": "The East Alley looms ahead, its shadowed mouth a threshold you cannot cross. The Docks remain beyond reach, sealed by the alley\u2019s unyielding edge. You stand at the heart of the Market Stalls, where the air hums with the clatter of stalls and the briny tang of the sea. A fisherman\u2019s voice cuts through the din: \u201cThe well\u2019s stones bled, but no body was found\u2014only a whisper of the Wizard\u2019s name.\u201d Your fingers trace the dark smear on the Copper Cup, now dry but still clinging like a forgotten sigil. The square holds its breath, waiting. What do you notice first?"
+    }
+  ]
+}

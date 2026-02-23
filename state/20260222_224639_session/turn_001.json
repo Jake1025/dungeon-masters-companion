@@ -1,0 +1,31 @@
+{
+  "turn": 1,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Caretaker Ilya",
+    "Carved Driftwood Charm",
+    "East Alley",
+    "Old Shrine",
+    "Temple of the Tide",
+    "Town Square"
+  ],
+  "focus": [
+    "Old Shrine"
+  ],
+  "session_summary": "Intro: The sun dips below the horizon, casting long shadows over the cobbled town square. A hush falls over the gathered townsfolk\u2014fishermen muttering about \u201cblood on the cobblestones,\u201d merchants avoiding eye contact, and children clutching their parents\u2019 hands. The air smells faintly of iron, though no bodies are missing. You step between the Market Stalls and the Watch Barracks, your boots crunching gravel as a distant scream echoes from the East Alley. A figure in a tattered fur coat stumbles toward you, breath ragged. \u201cPlease,\u201d he pleads, \u201cyou have to find them. The blood\u2026 it\u2019s not just stains. It\u2019s *him*.\u201d His gaze flicks to the Wizard\u2019s House across the square, its windows dark and unyielding.\nRecap: The Old Shrine stands in silent decay, its weathered stone pillars draped in ivy that clings like forgotten prayers. A faint, salt-tinged breeze carries the scent of seaweed and something older\u2014something like rust. At the shrine\u2019s center, a cracked stone basin holds a single, dried shell, its ridges etched with symbols that seem to shimmer when you blink. The air here is heavier, as though the walls themselves remember things they should not. To the east, the alley\u2019s scream still echoes, though the source is lost in the shadows. To the west, the Temple of the Tide\u2019s silhouette looms, its windows glowing faintly even now. You are here, at the edge of memory and myth. What do you look for?",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The sun dips below the horizon, casting long shadows over the cobbled town square. A hush falls over the gathered townsfolk\u2014fishermen muttering about \u201cblood on the cobblestones,\u201d merchants avoiding eye contact, and children clutching their parents\u2019 hands. The air smells faintly of iron, though no bodies are missing. You step between the Market Stalls and the Watch Barracks, your boots crunching gravel as a distant scream echoes from the East Alley. A figure in a tattered fur coat stumbles toward you, breath ragged. \u201cPlease,\u201d he pleads, \u201cyou have to find them. The blood\u2026 it\u2019s not just stains. It\u2019s *him*.\u201d His gaze flicks to the Wizard\u2019s House across the square, its windows dark and unyielding."
+    },
+    {
+      "role": "player",
+      "content": "go to the Old Shrine"
+    },
+    {
+      "role": "narrator",
+      "content": "The Old Shrine stands in silent decay, its weathered stone pillars draped in ivy that clings like forgotten prayers. A faint, salt-tinged breeze carries the scent of seaweed and something older\u2014something like rust. At the shrine\u2019s center, a cracked stone basin holds a single, dried shell, its ridges etched with symbols that seem to shimmer when you blink. The air here is heavier, as though the walls themselves remember things they should not. To the east, the alley\u2019s scream still echoes, though the source is lost in the shadows. To the west, the Temple of the Tide\u2019s silhouette looms, its windows glowing faintly even now. You are here, at the edge of memory and myth. What do you look for?"
+    }
+  ]
+}

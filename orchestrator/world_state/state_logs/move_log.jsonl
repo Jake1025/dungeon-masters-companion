@@ -1,0 +1,1 @@
+{"ts": "2026-02-22T22:28:04-05:00", "event_id": "", "from_id": "Town Square", "to_id": "Docks", "ok": true, "path": ["Town Square", "Harbor Gate", "Docks"], "distance": 2, "reason_code": null, "message": null, "state_version_before": null, "state_version_after": null}

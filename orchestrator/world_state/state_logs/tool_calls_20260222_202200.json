@@ -1,0 +1,72 @@
+[
+  {
+    "ts": "2026-02-22T20:22:38",
+    "tool": "move_to_location",
+    "args": {
+      "location_key": "Harbor Gate"
+    },
+    "result": {
+      "success": true,
+      "new_location": "Harbor Gate",
+      "reason": "You are already here."
+    },
+    "player_location_before": "Harbor Gate",
+    "player_location_after": "Harbor Gate"
+  },
+  {
+    "ts": "2026-02-22T20:24:35",
+    "tool": "move_to_location",
+    "args": {
+      "location_key": "dock"
+    },
+    "result": {
+      "success": false,
+      "new_location": null,
+      "reason": "Location 'dock' does not exist."
+    },
+    "player_location_before": "Harbor Gate",
+    "player_location_after": "Harbor Gate"
+  },
+  {
+    "ts": "2026-02-22T20:25:11",
+    "tool": "move_to_location",
+    "args": {
+      "location_key": "Dock"
+    },
+    "result": {
+      "success": false,
+      "new_location": null,
+      "reason": "Location 'Dock' does not exist."
+    },
+    "player_location_before": "Harbor Gate",
+    "player_location_after": "Harbor Gate"
+  },
+  {
+    "ts": "2026-02-22T20:26:08",
+    "tool": "move_to_location",
+    "args": {
+      "location_key": "Docks"
+    },
+    "result": {
+      "success": true,
+      "new_location": "Docks",
+      "reason": "Moved to Docks."
+    },
+    "player_location_before": "Harbor Gate",
+    "player_location_after": "Docks"
+  },
+  {
+    "ts": "2026-02-22T20:26:44",
+    "tool": "move_to_location",
+    "args": {
+      "location_key": "Town Square"
+    },
+    "result": {
+      "success": false,
+      "new_location": null,
+      "reason": "Cannot move to Town Square. Not connected to Docks."
+    },
+    "player_location_before": "Docks",
+    "player_location_after": "Docks"
+  }
+]

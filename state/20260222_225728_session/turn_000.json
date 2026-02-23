@@ -1,0 +1,30 @@
+{
+  "turn": 0,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bronze Fountain Coin",
+    "Copper Cup",
+    "East Alley",
+    "Guard's Lost Signet",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "South Bridge",
+    "Temple of the Tide",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks",
+    "Wizard's House"
+  ],
+  "focus": [
+    "Town Square"
+  ],
+  "session_summary": "Intro: The town square is a patchwork of shadows and half-light, the fading sun casting long, jagged silhouettes across cobblestones slick with seaweed. The air smells of salt and something older\u2014burnt wood, maybe, or the faint metallic tang of iron. A few townsfolk linger near the Bronze Fountain, their faces etched with quiet dread. A fisherman mutters about \u201cblood on the stones\u201d as he tosses his net, while a mother tucks a child closer, her eyes darting toward the East Alley. You notice a smear of dark residue near the base of the fountain, faint but unmistakable. As you step closer, a voice cuts through the hush. \u201cYou\u2019re here to look, aren\u2019t you?\u201d A lumberjack stands near the Market Stalls, his hands calloused, his eyes wild. \u201cThe Wizard\u2019s done this. But he\u2019s not the one you should be afraid of.\u201d",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The town square is a patchwork of shadows and half-light, the fading sun casting long, jagged silhouettes across cobblestones slick with seaweed. The air smells of salt and something older\u2014burnt wood, maybe, or the faint metallic tang of iron. A few townsfolk linger near the Bronze Fountain, their faces etched with quiet dread. A fisherman mutters about \u201cblood on the stones\u201d as he tosses his net, while a mother tucks a child closer, her eyes darting toward the East Alley. You notice a smear of dark residue near the base of the fountain, faint but unmistakable. As you step closer, a voice cuts through the hush. \u201cYou\u2019re here to look, aren\u2019t you?\u201d A lumberjack stands near the Market Stalls, his hands calloused, his eyes wild. \u201cThe Wizard\u2019s done this. But he\u2019s not the one you should be afraid of.\u201d"
+    }
+  ]
+}

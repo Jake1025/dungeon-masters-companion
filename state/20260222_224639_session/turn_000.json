@@ -1,0 +1,30 @@
+{
+  "turn": 0,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bronze Fountain Coin",
+    "Copper Cup",
+    "East Alley",
+    "Guard's Lost Signet",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "South Bridge",
+    "Temple of the Tide",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks",
+    "Wizard's House"
+  ],
+  "focus": [
+    "Town Square"
+  ],
+  "session_summary": "Intro: The sun dips below the horizon, casting long shadows over the cobbled town square. A hush falls over the gathered townsfolk\u2014fishermen muttering about \u201cblood on the cobblestones,\u201d merchants avoiding eye contact, and children clutching their parents\u2019 hands. The air smells faintly of iron, though no bodies are missing. You step between the Market Stalls and the Watch Barracks, your boots crunching gravel as a distant scream echoes from the East Alley. A figure in a tattered fur coat stumbles toward you, breath ragged. \u201cPlease,\u201d he pleads, \u201cyou have to find them. The blood\u2026 it\u2019s not just stains. It\u2019s *him*.\u201d His gaze flicks to the Wizard\u2019s House across the square, its windows dark and unyielding.",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The sun dips below the horizon, casting long shadows over the cobbled town square. A hush falls over the gathered townsfolk\u2014fishermen muttering about \u201cblood on the cobblestones,\u201d merchants avoiding eye contact, and children clutching their parents\u2019 hands. The air smells faintly of iron, though no bodies are missing. You step between the Market Stalls and the Watch Barracks, your boots crunching gravel as a distant scream echoes from the East Alley. A figure in a tattered fur coat stumbles toward you, breath ragged. \u201cPlease,\u201d he pleads, \u201cyou have to find them. The blood\u2026 it\u2019s not just stains. It\u2019s *him*.\u201d His gaze flicks to the Wizard\u2019s House across the square, its windows dark and unyielding."
+    }
+  ]
+}

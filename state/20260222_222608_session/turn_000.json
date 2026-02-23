@@ -1,0 +1,30 @@
+{
+  "turn": 0,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bronze Fountain Coin",
+    "Copper Cup",
+    "East Alley",
+    "Guard's Lost Signet",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "South Bridge",
+    "Temple of the Tide",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks",
+    "Wizard's House"
+  ],
+  "focus": [
+    "Town Square"
+  ],
+  "session_summary": "Intro: The Town Square is a tapestry of dimming light and murmured conversations. Dusk lingers, casting elongated shadows over cobblestones slick with rain. Townsfolk move with hushed urgency, their faces etched with fatigue. A faint metallic tang hangs in the air, though no one speaks of it. Near the Bronze Fountain, a child points at a smear of dark red on the stone wall\u2014a stain that vanishes when you lean closer. A fisherman mutters about \"the Wizard\u2019s hand,\" while a matron clutches her cloak, eyes darting toward the East Alley. The square feels like a stage where secrets bleed into the cracks of the pavement. What will you notice first?",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The Town Square is a tapestry of dimming light and murmured conversations. Dusk lingers, casting elongated shadows over cobblestones slick with rain. Townsfolk move with hushed urgency, their faces etched with fatigue. A faint metallic tang hangs in the air, though no one speaks of it. Near the Bronze Fountain, a child points at a smear of dark red on the stone wall\u2014a stain that vanishes when you lean closer. A fisherman mutters about \"the Wizard\u2019s hand,\" while a matron clutches her cloak, eyes darting toward the East Alley. The square feels like a stage where secrets bleed into the cracks of the pavement. What will you notice first?"
+    }
+  ]
+}

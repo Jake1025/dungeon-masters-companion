@@ -1,0 +1,42 @@
+{
+  "turn": 2,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Cracked Spyglass",
+    "Deckhand Finn",
+    "Dockmaster Hara",
+    "Docks",
+    "Fishermen's Shacks",
+    "Frayed Mooring Rope",
+    "Harbor Gate",
+    "Town Square",
+    "Warehouse Row"
+  ],
+  "focus": [
+    "Docks"
+  ],
+  "session_summary": "Intro: The town square is a patchwork of shadows and half-light, the fading sun casting long, jagged silhouettes across cobblestones slick with seaweed. The air smells of salt and something older\u2014burnt wood, maybe, or the faint metallic tang of iron. A few townsfolk linger near the Bronze Fountain, their faces etched with quiet dread. A fisherman mutters about \u201cblood on the stones\u201d as he tosses his net, while a mother tucks a child closer, her eyes darting toward the East Alley. You notice a smear of dark residue near the base of the fountain, faint but unmistakable. As you step closer, a voice cuts through the hush. \u201cYou\u2019re here to look, aren\u2019t you?\u201d A lumberjack stands near the Market Stalls, his hands calloused, his eyes wild. \u201cThe Wizard\u2019s done this. But he\u2019s not the one you should be afraid of.\u201d\nRecap: The Old Shrine lies beyond reach from here, its path obscured or sealed. The bloodstains near the Bronze Fountain remain, their origin still a mystery. Mitch\u2019s warning lingers in the air\u2014the Wizard\u2019s name is spoken in hushed tones, a shadow over the square. You step back from the fountain\u2019s edge, the smear of dark residue glinting faintly in the fading light. The townsfolk\u2019s uneasy whispers swirl around you, and the weight of unseen danger presses against the edges of the square.\nRecap: The Docks exhale the scent of brine and decay, ropes fraying at the edges of the world. Your boots crunch over splintered wood as you scan the horizon\u2014ships hulking in the distance, their shadows stretching toward the bloodstains that linger near the harbor\u2019s edge. A Fishermen\u2019s Shack looms to your left, its windows dark, while the Harbor Gate stands ajar, as if waiting for someone to push it open. The air hums with tension, a silent question: *What\u2019s behind the stains?* You notice a frayed mooring rope dangling near the water\u2019s edge, its knots loose, as though something\u2014or someone\u2014had been tied to it and vanished. The Wizard\u2019s name flickers in your mind, a warning half-remembered. Step forward, and the docks will answer.",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The town square is a patchwork of shadows and half-light, the fading sun casting long, jagged silhouettes across cobblestones slick with seaweed. The air smells of salt and something older\u2014burnt wood, maybe, or the faint metallic tang of iron. A few townsfolk linger near the Bronze Fountain, their faces etched with quiet dread. A fisherman mutters about \u201cblood on the stones\u201d as he tosses his net, while a mother tucks a child closer, her eyes darting toward the East Alley. You notice a smear of dark residue near the base of the fountain, faint but unmistakable. As you step closer, a voice cuts through the hush. \u201cYou\u2019re here to look, aren\u2019t you?\u201d A lumberjack stands near the Market Stalls, his hands calloused, his eyes wild. \u201cThe Wizard\u2019s done this. But he\u2019s not the one you should be afraid of.\u201d"
+    },
+    {
+      "role": "player",
+      "content": "go to the Old Shrine"
+    },
+    {
+      "role": "narrator",
+      "content": "The Old Shrine lies beyond reach from here, its path obscured or sealed. The bloodstains near the Bronze Fountain remain, their origin still a mystery. Mitch\u2019s warning lingers in the air\u2014the Wizard\u2019s name is spoken in hushed tones, a shadow over the square. You step back from the fountain\u2019s edge, the smear of dark residue glinting faintly in the fading light. The townsfolk\u2019s uneasy whispers swirl around you, and the weight of unseen danger presses against the edges of the square."
+    },
+    {
+      "role": "player",
+      "content": "go to Docks"
+    },
+    {
+      "role": "narrator",
+      "content": "The Docks exhale the scent of brine and decay, ropes fraying at the edges of the world. Your boots crunch over splintered wood as you scan the horizon\u2014ships hulking in the distance, their shadows stretching toward the bloodstains that linger near the harbor\u2019s edge. A Fishermen\u2019s Shack looms to your left, its windows dark, while the Harbor Gate stands ajar, as if waiting for someone to push it open. The air hums with tension, a silent question: *What\u2019s behind the stains?* You notice a frayed mooring rope dangling near the water\u2019s edge, its knots loose, as though something\u2014or someone\u2014had been tied to it and vanished. The Wizard\u2019s name flickers in your mind, a warning half-remembered. Step forward, and the docks will answer."
+    }
+  ]
+}

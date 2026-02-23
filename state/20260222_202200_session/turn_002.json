@@ -1,0 +1,41 @@
+{
+  "turn": 2,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Cracked Spyglass",
+    "Docks",
+    "Gate Guard Ren",
+    "Harbor Gate",
+    "Market Stalls",
+    "Smugglers' Ledger",
+    "Town Square",
+    "Watch Barracks"
+  ],
+  "focus": [
+    "Harbor Gate"
+  ],
+  "session_summary": "Intro: The Town Square is bathed in the amber glow of dusk, the air thick with the scent of damp stone and smoldering wood. A few townsfolk linger near the Bronze Fountain, their faces etched with weariness, while others avoid eye contact as if the very ground might swallow them whole. Rumors swirl like the mist rising from the Old Well\u2014of bloodstains appearing overnight, vanishing by dawn, and no bodies to account for them. A fisherman mutters about \"the Wizard\u2019s tricks,\" while a baker clutches a copper cup, its rim stained with something darker than coffee. The square feels like a stage where a play is being rehearsed, and the audience is too afraid to watch. You feel the weight of the unspoken: something is *wrong* here, and the bloodstains are only the beginning.\nRecap: The Harbor Gate looms heavy with the weight of unspoken secrets, its wooden planks groaning under the damp sea air. Beyond it, the Town Square pulses with a restless energy, its shadows deepening as dusk clings to the cobblestones. You catch glimpses of the square through the gate\u2019s narrow arch\u2014figures hunched in hushed clusters, their faces half-lit by the flicker of lanterns. The air here smells of salt and something older, something metallic. A faded poster tacked to the gate\u2019s wall advertises a smugglers\u2019 meeting, its ink smudged with what looks like dried blood. The bloodstains, you realize, are not just a mystery\u2014they\u2019re a thread pulled from the edge of this town, and you\u2019re standing where the thread begins.\nRecap: The air here clings to the edges of your senses, salt-tinged and faintly metallic, as if the sea itself holds its breath. Beyond the gate, the dock\u2019s silhouette looms in the dusk\u2014its planks warped and darkened, as though something had bled into the wood. A single crate, half-swallowed by the tide, sits abandoned at the water\u2019s edge, its surface stained with a reddish smear that doesn\u2019t wash away. A sailor\u2019s voice cuts through the hush: *\u201cDon\u2019t linger where the Wizard\u2019s shadows fall.\u201d* You turn back to the square, where the murmurs grow louder, the bloodstains a silent summons. What do you seek next?",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The Town Square is bathed in the amber glow of dusk, the air thick with the scent of damp stone and smoldering wood. A few townsfolk linger near the Bronze Fountain, their faces etched with weariness, while others avoid eye contact as if the very ground might swallow them whole. Rumors swirl like the mist rising from the Old Well\u2014of bloodstains appearing overnight, vanishing by dawn, and no bodies to account for them. A fisherman mutters about \"the Wizard\u2019s tricks,\" while a baker clutches a copper cup, its rim stained with something darker than coffee. The square feels like a stage where a play is being rehearsed, and the audience is too afraid to watch. You feel the weight of the unspoken: something is *wrong* here, and the bloodstains are only the beginning."
+    },
+    {
+      "role": "player",
+      "content": "go to Harbor Gate"
+    },
+    {
+      "role": "narrator",
+      "content": "The Harbor Gate looms heavy with the weight of unspoken secrets, its wooden planks groaning under the damp sea air. Beyond it, the Town Square pulses with a restless energy, its shadows deepening as dusk clings to the cobblestones. You catch glimpses of the square through the gate\u2019s narrow arch\u2014figures hunched in hushed clusters, their faces half-lit by the flicker of lanterns. The air here smells of salt and something older, something metallic. A faded poster tacked to the gate\u2019s wall advertises a smugglers\u2019 meeting, its ink smudged with what looks like dried blood. The bloodstains, you realize, are not just a mystery\u2014they\u2019re a thread pulled from the edge of this town, and you\u2019re standing where the thread begins."
+    },
+    {
+      "role": "player",
+      "content": "go to dock"
+    },
+    {
+      "role": "narrator",
+      "content": "The air here clings to the edges of your senses, salt-tinged and faintly metallic, as if the sea itself holds its breath. Beyond the gate, the dock\u2019s silhouette looms in the dusk\u2014its planks warped and darkened, as though something had bled into the wood. A single crate, half-swallowed by the tide, sits abandoned at the water\u2019s edge, its surface stained with a reddish smear that doesn\u2019t wash away. A sailor\u2019s voice cuts through the hush: *\u201cDon\u2019t linger where the Wizard\u2019s shadows fall.\u201d* You turn back to the square, where the murmurs grow louder, the bloodstains a silent summons. What do you seek next?"
+    }
+  ]
+}

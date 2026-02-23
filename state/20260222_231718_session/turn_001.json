@@ -1,0 +1,34 @@
+{
+  "turn": 1,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bar Counter",
+    "Brin",
+    "Copper Cup",
+    "Edda",
+    "Lysa",
+    "Mara",
+    "Stair Landing",
+    "Thom",
+    "Town Square"
+  ],
+  "focus": [
+    "Copper Cup"
+  ],
+  "session_summary": "Intro: The town square is bathed in the amber glow of dusk, the air thick with the scent of damp stone and smoldering wood. Townsfolk linger near the Bronze Fountain, their murmurs low and urgent\u2014rumors of bloodstains appearing overnight, vanishing by morning, with no bodies to account for them. A child\u2019s laughter rings hollow through the square, drawing wary glances. Near the Market Stalls, a figure in a tattered lumberjack coat fidgets with a splintered staff, eyes darting toward the Watch Barracks. \u201cYou\u2019re new here,\u201d he mutters, voice frayed. \u201cThe bloodstains\u2026 they\u2019re not just stains. The Wizard\u2019s watching.\u201d His fingers clutch the staff, knuckles white. \u201cFollow me. There\u2019s more than you\u2019d believe.\u201d\nRecap: The Copper Cup\u2019s dim interior hums with the clink of mugs and the low murmur of patrons, their faces lit by the flicker of a single iron-bellied lantern. Brin, the barkeep, leans against the counter, his calloused hands polishing a tankard as though it were a weapon. Across from him, Thom, a traveler with a scar tracing his jaw, glances toward the door, his eyes narrowing at the sound of boots echoing from the square. A woman named Edda, her voice sharp as a blade, leans in to warn Thom, \u201cThe bloodstains aren\u2019t just a tale. Someone\u2019s leaving them\u2014and the Wizard\u2019s not the only one watching.\u201d The air grows heavier, the weight of unspoken fears pressing against the walls, as if the very stones of the town remember what was hidden before dawn.",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The town square is bathed in the amber glow of dusk, the air thick with the scent of damp stone and smoldering wood. Townsfolk linger near the Bronze Fountain, their murmurs low and urgent\u2014rumors of bloodstains appearing overnight, vanishing by morning, with no bodies to account for them. A child\u2019s laughter rings hollow through the square, drawing wary glances. Near the Market Stalls, a figure in a tattered lumberjack coat fidgets with a splintered staff, eyes darting toward the Watch Barracks. \u201cYou\u2019re new here,\u201d he mutters, voice frayed. \u201cThe bloodstains\u2026 they\u2019re not just stains. The Wizard\u2019s watching.\u201d His fingers clutch the staff, knuckles white. \u201cFollow me. There\u2019s more than you\u2019d believe.\u201d"
+    },
+    {
+      "role": "player",
+      "content": "go to Copper Cup"
+    },
+    {
+      "role": "narrator",
+      "content": "The Copper Cup\u2019s dim interior hums with the clink of mugs and the low murmur of patrons, their faces lit by the flicker of a single iron-bellied lantern. Brin, the barkeep, leans against the counter, his calloused hands polishing a tankard as though it were a weapon. Across from him, Thom, a traveler with a scar tracing his jaw, glances toward the door, his eyes narrowing at the sound of boots echoing from the square. A woman named Edda, her voice sharp as a blade, leans in to warn Thom, \u201cThe bloodstains aren\u2019t just a tale. Someone\u2019s leaving them\u2014and the Wizard\u2019s not the only one watching.\u201d The air grows heavier, the weight of unspoken fears pressing against the walls, as if the very stones of the town remember what was hidden before dawn."
+    }
+  ]
+}

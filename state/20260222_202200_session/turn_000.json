@@ -1,0 +1,30 @@
+{
+  "turn": 0,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bronze Fountain Coin",
+    "Copper Cup",
+    "East Alley",
+    "Guard's Lost Signet",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "South Bridge",
+    "Temple of the Tide",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks",
+    "Wizard's House"
+  ],
+  "focus": [
+    "Town Square"
+  ],
+  "session_summary": "Intro: The Town Square is bathed in the amber glow of dusk, the air thick with the scent of damp stone and smoldering wood. A few townsfolk linger near the Bronze Fountain, their faces etched with weariness, while others avoid eye contact as if the very ground might swallow them whole. Rumors swirl like the mist rising from the Old Well\u2014of bloodstains appearing overnight, vanishing by dawn, and no bodies to account for them. A fisherman mutters about \"the Wizard\u2019s tricks,\" while a baker clutches a copper cup, its rim stained with something darker than coffee. The square feels like a stage where a play is being rehearsed, and the audience is too afraid to watch. You feel the weight of the unspoken: something is *wrong* here, and the bloodstains are only the beginning.",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The Town Square is bathed in the amber glow of dusk, the air thick with the scent of damp stone and smoldering wood. A few townsfolk linger near the Bronze Fountain, their faces etched with weariness, while others avoid eye contact as if the very ground might swallow them whole. Rumors swirl like the mist rising from the Old Well\u2014of bloodstains appearing overnight, vanishing by dawn, and no bodies to account for them. A fisherman mutters about \"the Wizard\u2019s tricks,\" while a baker clutches a copper cup, its rim stained with something darker than coffee. The square feels like a stage where a play is being rehearsed, and the audience is too afraid to watch. You feel the weight of the unspoken: something is *wrong* here, and the bloodstains are only the beginning."
+    }
+  ]
+}

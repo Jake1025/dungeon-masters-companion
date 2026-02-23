@@ -1,0 +1,64 @@
+{
+  "turn": 5,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Back Door - Copper Cup",
+    "East Alley",
+    "Fence Caris",
+    "Hidden Alley Knife",
+    "Old Shrine",
+    "Street Urchin Pip",
+    "Town Square"
+  ],
+  "focus": [
+    "East Alley"
+  ],
+  "session_summary": "Intro: The town square hums with the weight of unspoken fears. Dusk paints the sky in bruised purples, and the cobblestones gleam faintly under the last light. A group of fishermen huddle near the Bronze Fountain, their voices low as they point at the faint stains pooling near the base of the statue. A woman in a frayed apron mutters about \"cleaning it up\" before vanishing into the Market Stalls. The air carries the tang of seaweed and the faint scent of iron. A child\u2019s laughter rings out, but it\u2019s met with uneasy glances. The Wizard\u2019s House looms at the edge of the square, its windows dark, while the Harbor Gate stands ajar, as if waiting. What do you notice?\nRecap: The Docks exhale the salt of a restless sea, their wooden planks groaning under the weight of unspoken tension. A frayed mooring rope dangles from a rusted post, its fibers streaked with something dark and unidentifiable. Nearby, Deckhand Finn leans against a crate, his boots splattered with brine and something else\u2014something that glints faintly in the fading light. The Harbor Gate stands ajar, its hinges whispering secrets to the wind. Beyond it, the water churns, as if stirred by a hand unseen. You notice the stain hasn\u2019t reached these shores yet, but the air smells of iron and unfinished business. What do you do?\nRecap: You\u2019re still in East Alley, where the shadows stretch longer than they should under dusk\u2019s fading light. A faint, rust-colored stain streaks the wall near the Back Door of the Copper Cup, half-hidden by peeling paint. A whisper rises from the alley\u2019s mouth\u2014*\u201cDon\u2019t go near the shrine, not tonight\u201d*\u2014before dissolving into the clatter of a stray coin hitting stone. The air here smells of damp wood and something older, like iron and ash. Behind you, the Town Square\u2019s tension lingers, but here, the silence feels heavier, as if the alley itself holds its breath. What do you notice?\nRecap: The Back Door of the Copper Cup looms ahead, its frame warped by age and the weight of secrets. A faint, rust-colored stain stretches across the cobblestones near the threshold, bleeding into the shadows like a wound too fresh to heal. The air here is thick with the scent of damp wood and something metallic\u2014iron, perhaps, or something more ancient. A loose board creaks underfoot as you step closer, the stain\u2019s edge glowing faintly in the dim light. Beyond the door, the tavern\u2019s interior hums with low voices and the clink of glasses, but your attention is drawn back to the alley\u2019s mouth, where the whisper lingers: *\u201cDon\u2019t go near the shrine, not tonight.\u201d* What do you notice?\nRecap: The alley\u2019s shadows deepen as dusk fades, the rust-colored stain on the wall near the Copper Cup\u2019s Back Door pulsing faintly in the dim light. A chill lingers in the air, sharp with iron and ash. The whisper lingers at the alley\u2019s mouth: *\u201cDon\u2019t go near the shrine, not tonight.\u201d* Your boots crunch over loose gravel as you step closer, the stain\u2019s edge glowing like a wound. Behind you, the Town Square\u2019s unease hums faintly, but here, the silence feels like a living thing, watching. The shrine\u2019s warning hangs in the air\u2014what will you do next?\nRecap: You cannot reach the Docks from here. The alley\u2019s shadows deepen as dusk fades, the rust-colored stain on the wall near the Copper Cup\u2019s Back Door pulsing faintly in the dim light. A chill lingers in the air, sharp with iron and ash. The whisper lingers at the alley\u2019s mouth: *\u201cDon\u2019t go near the shrine, not tonight.\u201d* Your boots crunch over loose gravel as you step closer, the stain\u2019s edge glowing like a wound. Behind you, the Town Square\u2019s unease hums faintly, but here, the silence feels like a living thing, watching. What will you do next?",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The town square hums with the weight of unspoken fears. Dusk paints the sky in bruised purples, and the cobblestones gleam faintly under the last light. A group of fishermen huddle near the Bronze Fountain, their voices low as they point at the faint stains pooling near the base of the statue. A woman in a frayed apron mutters about \"cleaning it up\" before vanishing into the Market Stalls. The air carries the tang of seaweed and the faint scent of iron. A child\u2019s laughter rings out, but it\u2019s met with uneasy glances. The Wizard\u2019s House looms at the edge of the square, its windows dark, while the Harbor Gate stands ajar, as if waiting. What do you notice?"
+    },
+    {
+      "role": "player",
+      "content": "move me to Docks"
+    },
+    {
+      "role": "narrator",
+      "content": "The Docks exhale the salt of a restless sea, their wooden planks groaning under the weight of unspoken tension. A frayed mooring rope dangles from a rusted post, its fibers streaked with something dark and unidentifiable. Nearby, Deckhand Finn leans against a crate, his boots splattered with brine and something else\u2014something that glints faintly in the fading light. The Harbor Gate stands ajar, its hinges whispering secrets to the wind. Beyond it, the water churns, as if stirred by a hand unseen. You notice the stain hasn\u2019t reached these shores yet, but the air smells of iron and unfinished business. What do you do?"
+    },
+    {
+      "role": "player",
+      "content": "go to East Alley"
+    },
+    {
+      "role": "narrator",
+      "content": "You\u2019re still in East Alley, where the shadows stretch longer than they should under dusk\u2019s fading light. A faint, rust-colored stain streaks the wall near the Back Door of the Copper Cup, half-hidden by peeling paint. A whisper rises from the alley\u2019s mouth\u2014*\u201cDon\u2019t go near the shrine, not tonight\u201d*\u2014before dissolving into the clatter of a stray coin hitting stone. The air here smells of damp wood and something older, like iron and ash. Behind you, the Town Square\u2019s tension lingers, but here, the silence feels heavier, as if the alley itself holds its breath. What do you notice?"
+    },
+    {
+      "role": "player",
+      "content": "move me to Copper Cup"
+    },
+    {
+      "role": "narrator",
+      "content": "The Back Door of the Copper Cup looms ahead, its frame warped by age and the weight of secrets. A faint, rust-colored stain stretches across the cobblestones near the threshold, bleeding into the shadows like a wound too fresh to heal. The air here is thick with the scent of damp wood and something metallic\u2014iron, perhaps, or something more ancient. A loose board creaks underfoot as you step closer, the stain\u2019s edge glowing faintly in the dim light. Beyond the door, the tavern\u2019s interior hums with low voices and the clink of glasses, but your attention is drawn back to the alley\u2019s mouth, where the whisper lingers: *\u201cDon\u2019t go near the shrine, not tonight.\u201d* What do you notice?"
+    },
+    {
+      "role": "player",
+      "content": "go to East Alley"
+    },
+    {
+      "role": "narrator",
+      "content": "The alley\u2019s shadows deepen as dusk fades, the rust-colored stain on the wall near the Copper Cup\u2019s Back Door pulsing faintly in the dim light. A chill lingers in the air, sharp with iron and ash. The whisper lingers at the alley\u2019s mouth: *\u201cDon\u2019t go near the shrine, not tonight.\u201d* Your boots crunch over loose gravel as you step closer, the stain\u2019s edge glowing like a wound. Behind you, the Town Square\u2019s unease hums faintly, but here, the silence feels like a living thing, watching. The shrine\u2019s warning hangs in the air\u2014what will you do next?"
+    },
+    {
+      "role": "player",
+      "content": "move me to Docks"
+    },
+    {
+      "role": "narrator",
+      "content": "You cannot reach the Docks from here. The alley\u2019s shadows deepen as dusk fades, the rust-colored stain on the wall near the Copper Cup\u2019s Back Door pulsing faintly in the dim light. A chill lingers in the air, sharp with iron and ash. The whisper lingers at the alley\u2019s mouth: *\u201cDon\u2019t go near the shrine, not tonight.\u201d* Your boots crunch over loose gravel as you step closer, the stain\u2019s edge glowing like a wound. Behind you, the Town Square\u2019s unease hums faintly, but here, the silence feels like a living thing, watching. What will you do next?"
+    }
+  ]
+}

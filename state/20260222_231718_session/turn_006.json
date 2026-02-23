@@ -1,0 +1,74 @@
+{
+  "turn": 6,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bar Counter",
+    "Brin",
+    "Copper Cup",
+    "Edda",
+    "Lysa",
+    "Mara",
+    "Stair Landing",
+    "Thom",
+    "Town Square"
+  ],
+  "focus": [
+    "Copper Cup"
+  ],
+  "session_summary": "Intro: The town square is bathed in the amber glow of dusk, the air thick with the scent of damp stone and smoldering wood. Townsfolk linger near the Bronze Fountain, their murmurs low and urgent\u2014rumors of bloodstains appearing overnight, vanishing by morning, with no bodies to account for them. A child\u2019s laughter rings hollow through the square, drawing wary glances. Near the Market Stalls, a figure in a tattered lumberjack coat fidgets with a splintered staff, eyes darting toward the Watch Barracks. \u201cYou\u2019re new here,\u201d he mutters, voice frayed. \u201cThe bloodstains\u2026 they\u2019re not just stains. The Wizard\u2019s watching.\u201d His fingers clutch the staff, knuckles white. \u201cFollow me. There\u2019s more than you\u2019d believe.\u201d\nRecap: The Copper Cup\u2019s dim interior hums with the clink of mugs and the low murmur of patrons, their faces lit by the flicker of a single iron-bellied lantern. Brin, the barkeep, leans against the counter, his calloused hands polishing a tankard as though it were a weapon. Across from him, Thom, a traveler with a scar tracing his jaw, glances toward the door, his eyes narrowing at the sound of boots echoing from the square. A woman named Edda, her voice sharp as a blade, leans in to warn Thom, \u201cThe bloodstains aren\u2019t just a tale. Someone\u2019s leaving them\u2014and the Wizard\u2019s not the only one watching.\u201d The air grows heavier, the weight of unspoken fears pressing against the walls, as if the very stones of the town remember what was hidden before dawn.\nRecap: The door to the Copper Cup groans as you tug at it, but the hinges stick fast\u2014perhaps rusted, perhaps locked. You step back, squinting at the narrow alley beyond, where shadows cling to the brick walls like forgotten secrets. The Docks are not accessible from here. The air inside the tavern thickens again, the clink of mugs and hushed voices returning as if you\u2019d never left. Brin\u2019s gaze lingers on your coat, Thom\u2019s scarred jaw twitches toward the door, and Edda\u2019s sharp eyes flicker between the patrons. The bloodstains linger in the town\u2019s breath, but here, in the Copper Cup, the truth waits to be unraveled\u2014by those who dare listen.\nRecap: The door to the Copper Cup groans as you tug at it, but the hinges stick fast\u2014perhaps rusted, perhaps locked. You step back, squinting at the narrow alley beyond, where shadows cling to the brick walls like forgotten secrets. The Old Shrine lies beyond the town\u2019s edge, but its path is sealed here. The air inside the tavern thickens again, the clink of mugs and hushed voices returning as if you\u2019d never left. Brin\u2019s gaze lingers on your coat, Thom\u2019s scarred jaw twitches toward the door, and Edda\u2019s sharp eyes flicker between the patrons. The bloodstains linger in the town\u2019s breath, but here, in the Copper Cup, the truth waits to be unraveled\u2014by those who dare listen.\nRecap: The Copper Cup\u2019s lantern flickers, casting long shadows over the soot-streaked walls. Brin\u2019s polished tankard glints like a blade as he slides it back into place, his gaze lingering on the door\u2014though it remains locked, the hinges groaning in protest. Thom\u2019s scarred jaw twitches toward the sound of distant boots echoing from the square, while Edda\u2019s sharp voice cuts through the murmur: \u201cThe bloodstains aren\u2019t just a tale. Someone\u2019s leaving them\u2014and the Wizard\u2019s not the only one watching.\u201d The air grows heavier, the weight of unspoken fears pressing against the walls, as if the very stones of the town remember what was hidden before dawn. You can\u2019t reach the square from here, but the rumors cling to your coat like a second skin. The barkeep\u2019s eyes narrow\u2014does he know something? Or is he just another man haunted by the same shadows?\nRecap: The Town Square unfolds before you as dusk bleeds into twilight, its cobblestones slick with rain and the faint scent of iron. Lanterns swing from rusted hooks, casting long, trembling shadows over the gathering crowd. A hush hangs in the air, broken only by the clatter of hooves and the occasional murmur of wary conversation. Near the center, a cluster of figures huddle around a flickering fire, their faces half-hidden in the gloom. Among them, a lumberjack in a soot-streaked coat paces restlessly, his boots splashing water onto the stones. His eyes dart toward the square\u2019s edge, where the bloodstains\u2014still fresh, still vivid\u2014mark the pavement like a warning. He spots you and steps closer, his voice taut with urgency. \u201cYou\u2019re not supposed to be here,\u201d he says, his fingers gripping the hilt of an axe. \u201cBut if you\u2019re looking for answers\u2026 the Wizard\u2019s not the only one hunting the blood.\u201d\nRecap: The Town Square is already where you stand, its cobblestones slick with rain and the faint scent of iron. Lanterns swing from rusted hooks, casting long, trembling shadows over the gathering crowd. A hush hangs in the air, broken only by the clatter of hooves and the occasional murmur of wary conversation. Near the center, a cluster of figures huddle around a flickering fire, their faces half-hidden in the gloom. Among them, the lumberjack paces restlessly, his boots splashing water onto the stones. His eyes dart toward the square\u2019s edge, where the bloodstains\u2014still fresh, still vivid\u2014mark the pavement like a warning. He spots you and steps closer, his voice taut with urgency. \u201cYou\u2019re not supposed to be here,\u201d he says, his fingers gripping the hilt of an axe. \u201cBut if you\u2019re looking for answers\u2026 the Wizard\u2019s not the only one hunting the blood.\u201d",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The town square is bathed in the amber glow of dusk, the air thick with the scent of damp stone and smoldering wood. Townsfolk linger near the Bronze Fountain, their murmurs low and urgent\u2014rumors of bloodstains appearing overnight, vanishing by morning, with no bodies to account for them. A child\u2019s laughter rings hollow through the square, drawing wary glances. Near the Market Stalls, a figure in a tattered lumberjack coat fidgets with a splintered staff, eyes darting toward the Watch Barracks. \u201cYou\u2019re new here,\u201d he mutters, voice frayed. \u201cThe bloodstains\u2026 they\u2019re not just stains. The Wizard\u2019s watching.\u201d His fingers clutch the staff, knuckles white. \u201cFollow me. There\u2019s more than you\u2019d believe.\u201d"
+    },
+    {
+      "role": "player",
+      "content": "go to Copper Cup"
+    },
+    {
+      "role": "narrator",
+      "content": "The Copper Cup\u2019s dim interior hums with the clink of mugs and the low murmur of patrons, their faces lit by the flicker of a single iron-bellied lantern. Brin, the barkeep, leans against the counter, his calloused hands polishing a tankard as though it were a weapon. Across from him, Thom, a traveler with a scar tracing his jaw, glances toward the door, his eyes narrowing at the sound of boots echoing from the square. A woman named Edda, her voice sharp as a blade, leans in to warn Thom, \u201cThe bloodstains aren\u2019t just a tale. Someone\u2019s leaving them\u2014and the Wizard\u2019s not the only one watching.\u201d The air grows heavier, the weight of unspoken fears pressing against the walls, as if the very stones of the town remember what was hidden before dawn."
+    },
+    {
+      "role": "player",
+      "content": "go to Docks"
+    },
+    {
+      "role": "narrator",
+      "content": "The door to the Copper Cup groans as you tug at it, but the hinges stick fast\u2014perhaps rusted, perhaps locked. You step back, squinting at the narrow alley beyond, where shadows cling to the brick walls like forgotten secrets. The Docks are not accessible from here. The air inside the tavern thickens again, the clink of mugs and hushed voices returning as if you\u2019d never left. Brin\u2019s gaze lingers on your coat, Thom\u2019s scarred jaw twitches toward the door, and Edda\u2019s sharp eyes flicker between the patrons. The bloodstains linger in the town\u2019s breath, but here, in the Copper Cup, the truth waits to be unraveled\u2014by those who dare listen."
+    },
+    {
+      "role": "player",
+      "content": "go to the Old Shrine"
+    },
+    {
+      "role": "narrator",
+      "content": "The door to the Copper Cup groans as you tug at it, but the hinges stick fast\u2014perhaps rusted, perhaps locked. You step back, squinting at the narrow alley beyond, where shadows cling to the brick walls like forgotten secrets. The Old Shrine lies beyond the town\u2019s edge, but its path is sealed here. The air inside the tavern thickens again, the clink of mugs and hushed voices returning as if you\u2019d never left. Brin\u2019s gaze lingers on your coat, Thom\u2019s scarred jaw twitches toward the door, and Edda\u2019s sharp eyes flicker between the patrons. The bloodstains linger in the town\u2019s breath, but here, in the Copper Cup, the truth waits to be unraveled\u2014by those who dare listen."
+    },
+    {
+      "role": "player",
+      "content": "back to Town Square"
+    },
+    {
+      "role": "narrator",
+      "content": "The Copper Cup\u2019s lantern flickers, casting long shadows over the soot-streaked walls. Brin\u2019s polished tankard glints like a blade as he slides it back into place, his gaze lingering on the door\u2014though it remains locked, the hinges groaning in protest. Thom\u2019s scarred jaw twitches toward the sound of distant boots echoing from the square, while Edda\u2019s sharp voice cuts through the murmur: \u201cThe bloodstains aren\u2019t just a tale. Someone\u2019s leaving them\u2014and the Wizard\u2019s not the only one watching.\u201d The air grows heavier, the weight of unspoken fears pressing against the walls, as if the very stones of the town remember what was hidden before dawn. You can\u2019t reach the square from here, but the rumors cling to your coat like a second skin. The barkeep\u2019s eyes narrow\u2014does he know something? Or is he just another man haunted by the same shadows?"
+    },
+    {
+      "role": "player",
+      "content": "Town Square"
+    },
+    {
+      "role": "narrator",
+      "content": "The Town Square unfolds before you as dusk bleeds into twilight, its cobblestones slick with rain and the faint scent of iron. Lanterns swing from rusted hooks, casting long, trembling shadows over the gathering crowd. A hush hangs in the air, broken only by the clatter of hooves and the occasional murmur of wary conversation. Near the center, a cluster of figures huddle around a flickering fire, their faces half-hidden in the gloom. Among them, a lumberjack in a soot-streaked coat paces restlessly, his boots splashing water onto the stones. His eyes dart toward the square\u2019s edge, where the bloodstains\u2014still fresh, still vivid\u2014mark the pavement like a warning. He spots you and steps closer, his voice taut with urgency. \u201cYou\u2019re not supposed to be here,\u201d he says, his fingers gripping the hilt of an axe. \u201cBut if you\u2019re looking for answers\u2026 the Wizard\u2019s not the only one hunting the blood.\u201d"
+    },
+    {
+      "role": "player",
+      "content": "move to L020"
+    },
+    {
+      "role": "narrator",
+      "content": "The Town Square is already where you stand, its cobblestones slick with rain and the faint scent of iron. Lanterns swing from rusted hooks, casting long, trembling shadows over the gathering crowd. A hush hangs in the air, broken only by the clatter of hooves and the occasional murmur of wary conversation. Near the center, a cluster of figures huddle around a flickering fire, their faces half-hidden in the gloom. Among them, the lumberjack paces restlessly, his boots splashing water onto the stones. His eyes dart toward the square\u2019s edge, where the bloodstains\u2014still fresh, still vivid\u2014mark the pavement like a warning. He spots you and steps closer, his voice taut with urgency. \u201cYou\u2019re not supposed to be here,\u201d he says, his fingers gripping the hilt of an axe. \u201cBut if you\u2019re looking for answers\u2026 the Wizard\u2019s not the only one hunting the blood.\u201d"
+    }
+  ]
+}

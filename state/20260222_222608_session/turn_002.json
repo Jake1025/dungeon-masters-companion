@@ -1,0 +1,42 @@
+{
+  "turn": 2,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Cracked Spyglass",
+    "Deckhand Finn",
+    "Dockmaster Hara",
+    "Docks",
+    "Fishermen's Shacks",
+    "Frayed Mooring Rope",
+    "Harbor Gate",
+    "Town Square",
+    "Warehouse Row"
+  ],
+  "focus": [
+    "Docks"
+  ],
+  "session_summary": "Intro: The Town Square is a tapestry of dimming light and murmured conversations. Dusk lingers, casting elongated shadows over cobblestones slick with rain. Townsfolk move with hushed urgency, their faces etched with fatigue. A faint metallic tang hangs in the air, though no one speaks of it. Near the Bronze Fountain, a child points at a smear of dark red on the stone wall\u2014a stain that vanishes when you lean closer. A fisherman mutters about \"the Wizard\u2019s hand,\" while a matron clutches her cloak, eyes darting toward the East Alley. The square feels like a stage where secrets bleed into the cracks of the pavement. What will you notice first?\nRecap: The air grows heavier as you step back from the Bronze Fountain\u2019s stain, the metallic tang now sharp enough to burn your nostrils. A murmur rises from the crowd\u2014a fisherman\u2019s voice, low and frayed, speaks of \u201cthe Wizard\u2019s hand\u201d carving secrets into the stone. To your left, the East Alley yawns like a wound, its mouth dark and uninviting. Beyond the square, the Harbor Gate\u2019s silhouette looms, its weathered stone etched with faint, deliberate symbols that seem to pulse in the fading light. No one dares linger near it. What will you notice first?\nRecap: The Docks exhale the briny tang of salt and fish, the air thick with the creak of timber and the murmur of waves. A faint smear of dark red stains the wooden planks near the water\u2019s edge, though it vanishes when you lean closer. To your left, Deckhand Finn leans against a pole, his gaze flicking toward the Harbor Gate\u2019s distant silhouette. He notices you and mutters about \u201cthe Wizard\u2019s hand\u201d carving secrets into the stone. A frayed mooring rope dangles from a dock, its fibers twisted with something unnatural. The metallic scent grows sharper here\u2014like iron and blood. What will you examine first?",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The Town Square is a tapestry of dimming light and murmured conversations. Dusk lingers, casting elongated shadows over cobblestones slick with rain. Townsfolk move with hushed urgency, their faces etched with fatigue. A faint metallic tang hangs in the air, though no one speaks of it. Near the Bronze Fountain, a child points at a smear of dark red on the stone wall\u2014a stain that vanishes when you lean closer. A fisherman mutters about \"the Wizard\u2019s hand,\" while a matron clutches her cloak, eyes darting toward the East Alley. The square feels like a stage where secrets bleed into the cracks of the pavement. What will you notice first?"
+    },
+    {
+      "role": "player",
+      "content": "go to Gates"
+    },
+    {
+      "role": "narrator",
+      "content": "The air grows heavier as you step back from the Bronze Fountain\u2019s stain, the metallic tang now sharp enough to burn your nostrils. A murmur rises from the crowd\u2014a fisherman\u2019s voice, low and frayed, speaks of \u201cthe Wizard\u2019s hand\u201d carving secrets into the stone. To your left, the East Alley yawns like a wound, its mouth dark and uninviting. Beyond the square, the Harbor Gate\u2019s silhouette looms, its weathered stone etched with faint, deliberate symbols that seem to pulse in the fading light. No one dares linger near it. What will you notice first?"
+    },
+    {
+      "role": "player",
+      "content": "go to Docks"
+    },
+    {
+      "role": "narrator",
+      "content": "The Docks exhale the briny tang of salt and fish, the air thick with the creak of timber and the murmur of waves. A faint smear of dark red stains the wooden planks near the water\u2019s edge, though it vanishes when you lean closer. To your left, Deckhand Finn leans against a pole, his gaze flicking toward the Harbor Gate\u2019s distant silhouette. He notices you and mutters about \u201cthe Wizard\u2019s hand\u201d carving secrets into the stone. A frayed mooring rope dangles from a dock, its fibers twisted with something unnatural. The metallic scent grows sharper here\u2014like iron and blood. What will you examine first?"
+    }
+  ]
+}

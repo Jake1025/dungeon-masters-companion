@@ -1,0 +1,38 @@
+{
+  "turn": 1,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bronze Fountain Coin",
+    "Copper Cup",
+    "East Alley",
+    "Guard's Lost Signet",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "South Bridge",
+    "Temple of the Tide",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks",
+    "Wizard's House"
+  ],
+  "focus": [
+    "Town Square"
+  ],
+  "session_summary": "Intro: The Town Square is a tapestry of dimming light and murmured conversations. Dusk lingers, casting elongated shadows over cobblestones slick with rain. Townsfolk move with hushed urgency, their faces etched with fatigue. A faint metallic tang hangs in the air, though no one speaks of it. Near the Bronze Fountain, a child points at a smear of dark red on the stone wall\u2014a stain that vanishes when you lean closer. A fisherman mutters about \"the Wizard\u2019s hand,\" while a matron clutches her cloak, eyes darting toward the East Alley. The square feels like a stage where secrets bleed into the cracks of the pavement. What will you notice first?\nRecap: The air grows heavier as you step back from the Bronze Fountain\u2019s stain, the metallic tang now sharp enough to burn your nostrils. A murmur rises from the crowd\u2014a fisherman\u2019s voice, low and frayed, speaks of \u201cthe Wizard\u2019s hand\u201d carving secrets into the stone. To your left, the East Alley yawns like a wound, its mouth dark and uninviting. Beyond the square, the Harbor Gate\u2019s silhouette looms, its weathered stone etched with faint, deliberate symbols that seem to pulse in the fading light. No one dares linger near it. What will you notice first?",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The Town Square is a tapestry of dimming light and murmured conversations. Dusk lingers, casting elongated shadows over cobblestones slick with rain. Townsfolk move with hushed urgency, their faces etched with fatigue. A faint metallic tang hangs in the air, though no one speaks of it. Near the Bronze Fountain, a child points at a smear of dark red on the stone wall\u2014a stain that vanishes when you lean closer. A fisherman mutters about \"the Wizard\u2019s hand,\" while a matron clutches her cloak, eyes darting toward the East Alley. The square feels like a stage where secrets bleed into the cracks of the pavement. What will you notice first?"
+    },
+    {
+      "role": "player",
+      "content": "go to Gates"
+    },
+    {
+      "role": "narrator",
+      "content": "The air grows heavier as you step back from the Bronze Fountain\u2019s stain, the metallic tang now sharp enough to burn your nostrils. A murmur rises from the crowd\u2014a fisherman\u2019s voice, low and frayed, speaks of \u201cthe Wizard\u2019s hand\u201d carving secrets into the stone. To your left, the East Alley yawns like a wound, its mouth dark and uninviting. Beyond the square, the Harbor Gate\u2019s silhouette looms, its weathered stone etched with faint, deliberate symbols that seem to pulse in the fading light. No one dares linger near it. What will you notice first?"
+    }
+  ]
+}

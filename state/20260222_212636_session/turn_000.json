@@ -1,0 +1,30 @@
+{
+  "turn": 0,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bronze Fountain Coin",
+    "Copper Cup",
+    "East Alley",
+    "Guard's Lost Signet",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "South Bridge",
+    "Temple of the Tide",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks",
+    "Wizard's House"
+  ],
+  "focus": [
+    "Town Square"
+  ],
+  "session_summary": "Intro: The town square is bathed in the amber glow of dusk, the air thick with the scent of damp stone and burning tallow. Townsfolk move with a hushed urgency, their faces etched with exhaustion. A fisherman mutters about \u201cblood on the cobblestones near the well,\u201d while a merchant\u2019s wife clutches her apron, her eyes darting toward the east alley. The Bronze Fountain Coin glints in the fading light, and a Copper Cup rests on a market stall, its rim smeared with something dark. You feel the weight of unspoken secrets in the breeze\u2014rumors of stains that vanish by dawn, of a Wizard who walks the streets unseen. The square hums with tension, and somewhere in its shadows, a lumberjack\u2019s plea awaits.",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The town square is bathed in the amber glow of dusk, the air thick with the scent of damp stone and burning tallow. Townsfolk move with a hushed urgency, their faces etched with exhaustion. A fisherman mutters about \u201cblood on the cobblestones near the well,\u201d while a merchant\u2019s wife clutches her apron, her eyes darting toward the east alley. The Bronze Fountain Coin glints in the fading light, and a Copper Cup rests on a market stall, its rim smeared with something dark. You feel the weight of unspoken secrets in the breeze\u2014rumors of stains that vanish by dawn, of a Wizard who walks the streets unseen. The square hums with tension, and somewhere in its shadows, a lumberjack\u2019s plea awaits."
+    }
+  ]
+}

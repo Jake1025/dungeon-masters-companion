@@ -1,0 +1,30 @@
+{
+  "turn": 0,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bronze Fountain Coin",
+    "Copper Cup",
+    "East Alley",
+    "Guard's Lost Signet",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "South Bridge",
+    "Temple of the Tide",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks",
+    "Wizard's House"
+  ],
+  "focus": [
+    "Town Square"
+  ],
+  "session_summary": "Intro: The town square is bathed in the amber glow of dusk, the salt-tinged air thick with the scent of fish and damp stone. A hush hangs over the gathered townsfolk\u2014fishermen with calloused hands, merchants with wary eyes, and children darting between shadowed alleys. Whispers of bloodstains near the Old Well have turned the square into a place of uneasy curiosity. A fisherman mutters about \u201cghostly footprints\u201d by the harbor, while a mother shushes her child, eyes darting toward the East Alley. The Bronze Fountain Coin glints in the fading light, its surface marred by a faint, dark stain that seems to pulse faintly. As you wander the Market Stalls, a voice cuts through the hush. \u201cYou\u2019ll have to help us,\u201d says a man in a tattered fur coat, his hands trembling as he grips your arm. His name is Mitch, and his eyes are wild with something between fear and desperation. \u201cThe Wizard\u2019s done this,\u201d he says, pointing toward the bloodstains. \u201cBut he\u2019s not what he seems. If you\u2019re looking for answers, you\u2019ll need to tread carefully.\u201d",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The town square is bathed in the amber glow of dusk, the salt-tinged air thick with the scent of fish and damp stone. A hush hangs over the gathered townsfolk\u2014fishermen with calloused hands, merchants with wary eyes, and children darting between shadowed alleys. Whispers of bloodstains near the Old Well have turned the square into a place of uneasy curiosity. A fisherman mutters about \u201cghostly footprints\u201d by the harbor, while a mother shushes her child, eyes darting toward the East Alley. The Bronze Fountain Coin glints in the fading light, its surface marred by a faint, dark stain that seems to pulse faintly. As you wander the Market Stalls, a voice cuts through the hush. \u201cYou\u2019ll have to help us,\u201d says a man in a tattered fur coat, his hands trembling as he grips your arm. His name is Mitch, and his eyes are wild with something between fear and desperation. \u201cThe Wizard\u2019s done this,\u201d he says, pointing toward the bloodstains. \u201cBut he\u2019s not what he seems. If you\u2019re looking for answers, you\u2019ll need to tread carefully.\u201d"
+    }
+  ]
+}

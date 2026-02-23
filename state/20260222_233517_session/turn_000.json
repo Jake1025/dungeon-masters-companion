@@ -1,0 +1,30 @@
+{
+  "turn": 0,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bronze Fountain Coin",
+    "Copper Cup",
+    "East Alley",
+    "Guard's Lost Signet",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "South Bridge",
+    "Temple of the Tide",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks",
+    "Wizard's House"
+  ],
+  "focus": [
+    "Town Square"
+  ],
+  "session_summary": "Intro: The town square hums with the weight of unspoken fears. Dusk paints the sky in bruised purples, and the cobblestones gleam faintly under the last light. A group of fishermen huddle near the Bronze Fountain, their voices low as they point at the faint stains pooling near the base of the statue. A woman in a frayed apron mutters about \"cleaning it up\" before vanishing into the Market Stalls. The air carries the tang of seaweed and the faint scent of iron. A child\u2019s laughter rings out, but it\u2019s met with uneasy glances. The Wizard\u2019s House looms at the edge of the square, its windows dark, while the Harbor Gate stands ajar, as if waiting. What do you notice?",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The town square hums with the weight of unspoken fears. Dusk paints the sky in bruised purples, and the cobblestones gleam faintly under the last light. A group of fishermen huddle near the Bronze Fountain, their voices low as they point at the faint stains pooling near the base of the statue. A woman in a frayed apron mutters about \"cleaning it up\" before vanishing into the Market Stalls. The air carries the tang of seaweed and the faint scent of iron. A child\u2019s laughter rings out, but it\u2019s met with uneasy glances. The Wizard\u2019s House looms at the edge of the square, its windows dark, while the Harbor Gate stands ajar, as if waiting. What do you notice?"
+    }
+  ]
+}

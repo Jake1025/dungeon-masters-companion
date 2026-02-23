@@ -3,6 +3,14 @@ from typing import Any
 from .story import GameState, StoryGraph, NodeType
 import json
 
+from pathlib import Path
+from datetime import datetime
+
+TOOL_LOG_DIR = Path(__file__).parent / "state_logs"
+TOOL_LOG_DIR.mkdir(exist_ok=True)
+
+TOOL_LOG_FILE = TOOL_LOG_DIR / f"tool_calls_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+
 
 def check_can_interact(entity_key: str, game_state: GameState, story_graph: StoryGraph) -> dict[str, Any]:
     """Check if player can interact with an entity."""

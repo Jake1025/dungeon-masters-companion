@@ -1,0 +1,46 @@
+{
+  "turn": 2,
+  "beat": "Introduce the town square at dusk, the weary mood of the townsfolk, and rumors of unexplained bloodstains with no missing bodies. Let the player explore until they learn enough about the mystery to proceed with an investigation.",
+  "active_keys": [
+    "Bronze Fountain Coin",
+    "Copper Cup",
+    "East Alley",
+    "Guard's Lost Signet",
+    "Harbor Gate",
+    "Market Stalls",
+    "Old Well",
+    "South Bridge",
+    "Temple of the Tide",
+    "Town Hall",
+    "Town Square",
+    "Watch Barracks",
+    "Wizard's House"
+  ],
+  "focus": [
+    "Town Square"
+  ],
+  "session_summary": "Intro: The town square is bathed in the amber glow of dusk, the air thick with the scent of rain-soaked earth and the faint tang of iron. A few townsfolk linger near the Bronze Fountain, their murmurs low and uneasy. One woman clutches a copper cup to her chest, her gaze darting to the cobblestones where dark stains have been scrubbed in vain. A fisherman at the Harbor Gate mutters about \u201cblood that doesn\u2019t belong,\u201d while a child\u2019s laughter rings hollow through the square. The Market Stalls are shuttered, their wares untouched, and the Old Well gurgles ominously in the shadows. You feel the weight of unspoken fear in the air\u2014something is wrong, but no one dares name it. A figure in a tattered cloak approaches, their boots crunching over the stained stones. \u201cStranger,\u201d they say, voice taut with urgency, \u201cthe bloodstains\u2026 they\u2019re not just stains. Follow me.\u201d\nRecap: The amber light of dusk flickers over cobblestones slick with rain, the scent of iron clinging to the air like a warning. A woman at the Bronze Fountain wipes her hands on her apron, her eyes flicking to the stains that linger despite scrubbing. The fisherman at the Harbor Gate curses under his breath, while a child\u2019s laughter echoes too brightly through the square. A figure in a tattered cloak steps into your view, their boots crunching over the darkened stones. \u201cStranger,\u201d they say, voice tight, \u201cthe bloodstains\u2026 they\u2019re not just stains. Follow me.\u201d The weight of their words lingers, and the square holds its breath.\nRecap: The bar is not accessible from the Town Square\u2014its path is sealed, its doors barred to all. Instead, the square hums with unresolved tension. The Harbor Gate bristles with the fisherman\u2019s muttered curses, the Old Well\u2019s shadow stretches long, and the figure in the cloak waits, their breath visible in the dusk. Follow the stains, the whispers, or the tattered cloak\u2019s plea\u2014where will your feet lead?",
+  "story_status": "",
+  "history": [
+    {
+      "role": "narrator",
+      "content": "The town square is bathed in the amber glow of dusk, the air thick with the scent of rain-soaked earth and the faint tang of iron. A few townsfolk linger near the Bronze Fountain, their murmurs low and uneasy. One woman clutches a copper cup to her chest, her gaze darting to the cobblestones where dark stains have been scrubbed in vain. A fisherman at the Harbor Gate mutters about \u201cblood that doesn\u2019t belong,\u201d while a child\u2019s laughter rings hollow through the square. The Market Stalls are shuttered, their wares untouched, and the Old Well gurgles ominously in the shadows. You feel the weight of unspoken fear in the air\u2014something is wrong, but no one dares name it. A figure in a tattered cloak approaches, their boots crunching over the stained stones. \u201cStranger,\u201d they say, voice taut with urgency, \u201cthe bloodstains\u2026 they\u2019re not just stains. Follow me.\u201d"
+    },
+    {
+      "role": "player",
+      "content": "where am I"
+    },
+    {
+      "role": "narrator",
+      "content": "The amber light of dusk flickers over cobblestones slick with rain, the scent of iron clinging to the air like a warning. A woman at the Bronze Fountain wipes her hands on her apron, her eyes flicking to the stains that linger despite scrubbing. The fisherman at the Harbor Gate curses under his breath, while a child\u2019s laughter echoes too brightly through the square. A figure in a tattered cloak steps into your view, their boots crunching over the darkened stones. \u201cStranger,\u201d they say, voice tight, \u201cthe bloodstains\u2026 they\u2019re not just stains. Follow me.\u201d The weight of their words lingers, and the square holds its breath."
+    },
+    {
+      "role": "player",
+      "content": "move me to the bar"
+    },
+    {
+      "role": "narrator",
+      "content": "The bar is not accessible from the Town Square\u2014its path is sealed, its doors barred to all. Instead, the square hums with unresolved tension. The Harbor Gate bristles with the fisherman\u2019s muttered curses, the Old Well\u2019s shadow stretches long, and the figure in the cloak waits, their breath visible in the dusk. Follow the stains, the whispers, or the tattered cloak\u2019s plea\u2014where will your feet lead?"
+    }
+  ]
+}
