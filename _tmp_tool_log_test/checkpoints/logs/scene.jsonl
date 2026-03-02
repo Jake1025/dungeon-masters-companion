@@ -1,0 +1,1 @@
+{"ts": "2026-03-01T22:25:47-05:00", "event_id": "turn_001:005:move_to_location", "turn": 1, "phase": "mechanics", "group": "scene", "tool": "move_to_location", "ok": true, "before_location": "Town Square", "after_location": "Market Stalls", "args": {"location_key": "Market Stalls"}, "result": {"success": true, "new_location": "Market Stalls", "reason": "Moved to Market Stalls."}}

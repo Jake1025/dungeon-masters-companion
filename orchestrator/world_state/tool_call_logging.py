@@ -163,6 +163,7 @@ class ToolCallLogger:
         # 中文：append-only 写入；失败吞掉
         # English: append-only; swallow failures
         try:
+            _append_jsonl(log_dir / "tool_calls.jsonl", payload)        # all-in-one
             _append_jsonl(log_dir / f"{payload['group']}.jsonl", payload)
         except Exception:
             return
