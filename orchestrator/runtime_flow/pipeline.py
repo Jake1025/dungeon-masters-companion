@@ -35,6 +35,8 @@ from ..world_state.tools import (
 )
 
 
+from ..world_state.tool_call_logging import ToolCallLogger
+
 def _extract_labeled_line(text: str, label: str) -> str:
     pattern = re.compile(rf"(?im)^\s*{re.escape(label)}\s*:\s*(.+?)\s*$")
     match = pattern.search(text or "")
@@ -300,8 +302,23 @@ class StoryEngine:
             "all_world_tool_calls": [],
             "current_location": self.game_state.player_location,
         }
+
+        # ============================================================
+        # 中文：
+        #   初始化本回合工具调用日志序号（单调递增）
+        #   用于生成 event_id: turn_xxx:seq:tool_name
+        #
+        # English:
+        #   Initialize per-turn tool log sequence (monotonic counter)
+        #   Used to generate event_id: turn_xxx:seq:tool_name
+        # ============================================================
+
+        tool_logger = ToolCallLogger()   # 自动使用 checkpoint_root/logs
+        turn_ctx["log_seq"] = 0          # 每个 turn 从 0 开始
+
         action_tool_calls: List[Dict[str, Any]] = []
         bind_turn_orchestration_ctx(self.game_state, turn_ctx)
+
 
         world_tools_by_name = {
             tool["function"]["name"]: tool
@@ -372,7 +389,13 @@ class StoryEngine:
         def phase_tool_executor(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
             args = dict(arguments or {})
             turn_ctx["current_location"] = self.game_state.player_location
-
+           
+            # ============================================================
+            # 中文：记录调用前的位置（用于移动/审计 before/after）
+            # English: capture before-location for movement/audit logs
+            # ============================================================
+            before_location = getattr(self.game_state, "player_location", None)
+            
             # Hidden runtime behavior: in manual roll mode, the CLI can supply the player's d20
             # while the model still calls the same `skill_check` tool and receives a normal result.
             if (
@@ -389,6 +412,30 @@ class StoryEngine:
                 args["_manual_roll"] = int(self.manual_roll_provider(roll_request))
 
             result = execute_world_tool(tool_name, args, self.game_state)
+
+                # --- logging (best-effort) ---
+            try:
+                turn_ctx["log_seq"] = int(turn_ctx.get("log_seq", 0)) + 1
+                event_id = tool_logger.build_event_id(
+                    turn=self.turn_index + 1,  # because you increment after commit
+                    seq=turn_ctx["log_seq"],
+                    tool=tool_name,
+                )
+                tool_logger.log_tool_call(
+                    event_id=event_id,
+                    turn=self.turn_index + 1,
+                    phase=str(turn_ctx.get("phase", "")),
+                    tool=tool_name,
+                    args=args,
+                    result=result,
+                    game_state=self.game_state,
+                    before_location=before_location,
+                    after_location=getattr(self.game_state, "player_location", None),
+                )
+            except Exception:
+                pass
+            # --- logging end ---
+
             if tool_name in world_tools_by_name:
                 world_call_entry = {
                     "phase": turn_ctx.get("phase", ""),
