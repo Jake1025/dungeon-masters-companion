@@ -407,15 +407,22 @@ def main() -> None:
         set_world_checkpoint_root(engine.game_state, session_dir / "checkpoints")
         print(f"Session snapshots will be written to: {session_dir}")
 
-    debug_logger.log_event(
-        game_state=engine.game_state,
-        turn=0,
-        phase="cli",
-        event_type="session_start",
-        severity="info",
-        message="CLI session started.",
-        details={"session_dir": str(session_dir)},
-    )
+        # ============================================================
+        # 中文：
+        #   记录 session_start，便于验证 debug logger 已成功接入 CLI 路径
+        #
+        # English:
+        #   Record session_start to verify debug logger is attached to the CLI path
+        # ============================================================
+        debug_logger.log_event(
+            game_state=engine.game_state,
+            turn=0,
+            phase="cli",
+            event_type="session_start",
+            severity="info",
+            message="CLI session started.",
+            details={"session_dir": str(session_dir)},
+        )
 
     # ----- Intro -----
 
@@ -425,6 +432,17 @@ def main() -> None:
         intro = engine.generate_intro()
         print(f"\n{intro['ic']}\n")
     except Exception as exc:
+        # ============================================================
+        # 中文：
+        #   intro 失败时：
+        #   - 记录结构化 fallback 事件
+        #   - 再记录通用 exception 事件
+        #
+        # English:
+        #   On intro failure:
+        #   - record structured fallback event
+        #   - then record generic exception event
+        # ============================================================
         debug_logger.log_event(
             game_state=engine.game_state,
             turn=0,
@@ -434,6 +452,13 @@ def main() -> None:
             message="Intro generation failed; falling back to starting_state.",
             details={"error": str(exc)},
         )
+        debug_logger.log_exception(
+            game_state=engine.game_state,
+            turn=0,
+            phase="intro",
+            where="cli.main.generate_intro",
+            exc=exc,
+        )
         print(f"\n[Intro] {engine.starting_state}\n")
 
     # Save initial snapshot
@@ -441,8 +466,15 @@ def main() -> None:
         try:
             _write_session_checkpoint(session_dir, engine, 0)
         except Exception as exc:
+            debug_logger.log_exception(
+                game_state=engine.game_state,
+                turn=0,
+                phase="checkpoint",
+                where="cli.main._write_session_checkpoint.initial",
+                exc=exc,
+            )
             logging.warning("Failed to write initial state snapshot: %s", exc)
-
+            
     # ----- Game Loop -----
 
     while True:
@@ -458,6 +490,14 @@ def main() -> None:
                 message="Session terminated by user input interrupt.",
                 details={"error_type": type(exc).__name__},
             )
+            debug_logger.log_exception(
+                game_state=engine.game_state,
+                turn=engine.turn_index,
+                phase="cli",
+                where="cli.main.input_loop",
+                exc=exc,
+                severity="warning",
+            )
             print("\nExiting.")
             break
 
@@ -468,8 +508,25 @@ def main() -> None:
             print("Goodbye.")
             break
 
-        turn: Dict[str, Any] = engine.run_turn(player_line)
-
+        try:
+            turn: Dict[str, Any] = engine.run_turn(player_line)
+        except Exception as exc:
+            # ============================================================
+            # 中文：
+            #   记录每个 turn 的未处理异常
+            #
+            # English:
+            #   Record unhandled per-turn exceptions
+            # ============================================================
+            debug_logger.log_exception(
+                game_state=engine.game_state,
+                turn=engine.turn_index + 1,
+                phase="cli",
+                where="cli.main.run_turn",
+                exc=exc,
+                details={"player_input": player_line},
+            )
+            raise   
         # Verbose LLM Trace
         if args.verbose and turn.get("llm_trace"):
             print_llm_verbose(turn["turn"], turn["llm_trace"])
@@ -482,6 +539,13 @@ def main() -> None:
             try:
                 _write_session_checkpoint(session_dir, engine, int(turn.get("turn", engine.turn_index)))
             except Exception as exc:
+                debug_logger.log_exception(
+                    game_state=engine.game_state,
+                    turn=int(turn.get("turn", engine.turn_index)),
+                    phase="checkpoint",
+                    where="cli.main._write_session_checkpoint.turn",
+                    exc=exc,
+                )
                 logging.warning("Failed to write state snapshot: %s", exc)
 
 

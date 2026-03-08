@@ -267,10 +267,28 @@ class StoryEngine:
             player_input,
         )
 
-        intent, intent_debug = self.steps["intent"].run(
-            self.adapter,
-            intent_prompt,
-        )
+        try:
+            intent, intent_debug = self.steps["intent"].run(
+                self.adapter,
+                intent_prompt,
+            )
+        except Exception as exc:
+            # ============================================================
+            # 中文：
+            #   记录 intent parser 阶段未处理异常
+            #
+            # English:
+            #   Record unhandled exceptions in intent parser stage
+            # ============================================================
+            debug_logger.log_exception(
+                game_state=self.game_state,
+                turn=self.turn_index + 1,
+                phase="intent_parse",
+                where="pipeline.run_turn.intent_step",
+                exc=exc,
+                details={"player_input": player_input},
+            )
+            raise
 
         if trace is not None:
             trace["INTENT_PARSE"] = intent_debug
@@ -404,7 +422,25 @@ class StoryEngine:
                 }
                 args["_manual_roll"] = int(self.manual_roll_provider(roll_request))
 
-            result = execute_world_tool(tool_name, args, self.game_state)
+            try:
+                result = execute_world_tool(tool_name, args, self.game_state)
+            except Exception as exc:
+                # ============================================================
+                # 中文：
+                #   记录 tool 执行阶段的未处理异常
+                #
+                # English:
+                #   Record unhandled exceptions during tool execution
+                # ============================================================
+                debug_logger.log_exception(
+                    game_state=self.game_state,
+                    turn=self.turn_index + 1,
+                    phase=str(turn_ctx.get("phase", "")),
+                    where=f"pipeline.phase_tool_executor.execute_world_tool:{tool_name}",
+                    exc=exc,
+                    details={"arguments": args},
+                )
+                raise
 
             try:
                 turn_ctx["log_seq"] = int(turn_ctx.get("log_seq", 0)) + 1
@@ -667,10 +703,28 @@ class StoryEngine:
         if self.adapter.verbose:
             print("\n[NARRATE] Generating narrative with updated state")
 
-        narrative, narrate_debug = self.steps["narrate"].run(
-            self.adapter,
-            narrate_prompt,
-        )
+        try:
+            narrative, narrate_debug = self.steps["narrate"].run(
+                self.adapter,
+                narrate_prompt,
+            )
+        except Exception as exc:
+            # ============================================================
+            # 中文：
+            #   记录 narrate 阶段未处理异常
+            #
+            # English:
+            #   Record unhandled exceptions in narrate stage
+            # ============================================================
+            debug_logger.log_exception(
+                game_state=self.game_state,
+                turn=self.turn_index + 1,
+                phase="narrate",
+                where="pipeline.run_turn.narrate",
+                exc=exc,
+                details={"player_input": player_input},
+            )
+            raise
 
         self.history.add_player_turn(player_input)
         self.history.add_dm_turn(narrative)
