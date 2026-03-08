@@ -6,14 +6,92 @@ from .story import GameState
 from .tool_runtime import ensure_entity_registry, get_runtime_world_model, normalize_key
 
 
-def check_can_interact(entity_key: str, game_state: GameState) -> dict[str, object]:
+def _resolve_target_key(model, raw_key: str) -> str:
+    """
+    中文：
+      尝试把用户/模型给出的目标解析成现有 world model 中的标准 key。
+      支持：
+      - 直接传 key
+      - 直接传 name
+      - 模糊匹配 key/name 的子串
+
+    English:
+      Resolve a raw target string into a canonical key in the world model.
+      Supports:
+      - exact key
+      - exact name
+      - fuzzy substring match on key/name
+    """
+    candidate = str(raw_key or "").strip()
+    if not candidate:
+        return ""
+
+    location = model.get_location(candidate)
+    if location is not None:
+        return location.key
+
+    entity = model.get_entity(candidate)
+    if entity is not None:
+        return entity.key
+
+    item = model.get_item(candidate)
+    if item is not None:
+        return item.key
+
+    needle = normalize_key(candidate)
+
+    for location in model.locations.values():
+        if needle in normalize_key(location.key) or needle in normalize_key(location.name):
+            return location.key
+
+    for entity in model.entities.values():
+        if needle in normalize_key(entity.key) or needle in normalize_key(entity.name):
+            return entity.key
+
+    for item in model.items.values():
+        if needle in normalize_key(item.key) or needle in normalize_key(item.name):
+            return item.key
+
+    return ""
+
+
+def check_can_interact(entity_key: str = "", game_state: GameState | None = None) -> dict[str, object]:
+    """
+    中文：
+      检查玩家当前是否可以与目标交互。
+      目标可以是：
+      - location
+      - entity
+      - item
+
+    English:
+      Check whether the player can currently interact with the target.
+      The target may be:
+      - location
+      - entity
+      - item
+    """
+    if game_state is None:
+        return {"success": False, "can_interact": False, "reason": "Missing game_state context."}
+
     model = get_runtime_world_model(game_state)
     player_loc = game_state.player_location
-    location = model.get_location(entity_key)
+
+    resolved_key = _resolve_target_key(model, entity_key) or str(entity_key or "").strip()
+    if not resolved_key:
+        return {
+            "success": True,
+            "can_interact": False,
+            "reason": "No interactable target was provided.",
+            "nearby": model.scene_snapshot(player_loc),
+        }
+
+    location = model.get_location(resolved_key)
     if location is not None:
         current_location = model.get_location(player_loc)
         if current_location is None:
-            return {"success": False, "can_interact": False, "reason": "Invalid player location"}
+            return {"success": False, "can_interact": False, "reason": "Invalid player location."}
+
         if location.key == player_loc:
             return {
                 "success": True,
@@ -21,6 +99,7 @@ def check_can_interact(entity_key: str, game_state: GameState) -> dict[str, obje
                 "entity_type": "location",
                 "reason": "You are already at this location.",
             }
+
         if location.key in current_location.connections:
             return {
                 "success": True,
@@ -28,6 +107,7 @@ def check_can_interact(entity_key: str, game_state: GameState) -> dict[str, obje
                 "entity_type": "location",
                 "reason": f"{location.key} is accessible from here.",
             }
+
         return {
             "success": True,
             "can_interact": False,
@@ -35,7 +115,7 @@ def check_can_interact(entity_key: str, game_state: GameState) -> dict[str, obje
             "reason": f"{location.key} is not connected to {player_loc}.",
         }
 
-    entity = model.get_entity(entity_key)
+    entity = model.get_entity(resolved_key)
     if entity is not None:
         if entity.key == "Player":
             return {
@@ -44,6 +124,7 @@ def check_can_interact(entity_key: str, game_state: GameState) -> dict[str, obje
                 "entity_type": "player",
                 "reason": "The player cannot interact with themselves as a separate target.",
             }
+
         if entity.location == player_loc:
             return {
                 "success": True,
@@ -51,6 +132,7 @@ def check_can_interact(entity_key: str, game_state: GameState) -> dict[str, obje
                 "entity_type": entity.entity_type,
                 "reason": f"{entity.key} is here.",
             }
+
         return {
             "success": True,
             "can_interact": False,
@@ -58,7 +140,7 @@ def check_can_interact(entity_key: str, game_state: GameState) -> dict[str, obje
             "reason": f"{entity.key} is at {entity.location}.",
         }
 
-    item = model.get_item(entity_key)
+    item = model.get_item(resolved_key)
     if item is not None:
         if item.is_at_location(player_loc):
             return {
@@ -67,6 +149,7 @@ def check_can_interact(entity_key: str, game_state: GameState) -> dict[str, obje
                 "entity_type": "item",
                 "reason": f"{item.key} is here.",
             }
+
         if item.holder_kind == "entity":
             holder = model.get_entity(item.holder_key)
             if holder is not None and holder.location == player_loc:
@@ -76,6 +159,7 @@ def check_can_interact(entity_key: str, game_state: GameState) -> dict[str, obje
                     "entity_type": "item",
                     "reason": f"{item.key} is being carried by {holder.key}.",
                 }
+
         return {
             "success": True,
             "can_interact": False,
@@ -83,11 +167,40 @@ def check_can_interact(entity_key: str, game_state: GameState) -> dict[str, obje
             "reason": f"{item.key} is at {item.holder_key}.",
         }
 
-    return {"success": False, "can_interact": False, "reason": f"Entity '{entity_key}' does not exist."}
+    return {
+        "success": True,
+        "can_interact": False,
+        "reason": f"Entity '{resolved_key}' does not exist.",
+        "nearby": model.scene_snapshot(player_loc),
+    }
 
 
-def move_to_location(location_key: str, game_state: GameState) -> dict[str, object]:
+def move_to_location(location_key: str = "", game_state: GameState | None = None) -> dict[str, object]:
+    """
+    中文：
+      将玩家移动到一个相邻 location。
+      支持模糊 location 解析。
+
+    English:
+      Move the player to a connected location.
+      Supports fuzzy location resolution.
+    """
+    if game_state is None:
+        return {"success": False, "new_location": None, "reason": "Missing game_state context."}
+
     model = get_runtime_world_model(game_state)
+
+    if not str(location_key or "").strip():
+        return {
+            "success": True,
+            "new_location": game_state.player_location,
+            "reason": "No destination provided. Staying at current location.",
+        }
+
+    resolved_destination = _resolve_target_key(model, location_key)
+    if resolved_destination and model.get_location(resolved_destination) is not None:
+        location_key = resolved_destination
+
     location = model.get_location(location_key)
     if location is None:
         return {
@@ -99,20 +212,26 @@ def move_to_location(location_key: str, game_state: GameState) -> dict[str, obje
     current_location = model.get_location(game_state.player_location)
     if current_location is None:
         return {"success": False, "new_location": None, "reason": "Invalid current location."}
-    if location_key == game_state.player_location:
-        return {"success": True, "new_location": location_key, "reason": "You are already here."}
-    if location_key not in current_location.connections:
+
+    if location.key == game_state.player_location:
+        return {"success": True, "new_location": location.key, "reason": "You are already here."}
+
+    if location.key not in current_location.connections:
         return {
             "success": False,
             "new_location": None,
-            "reason": f"Cannot move to {location_key}. Not connected to {game_state.player_location}.",
+            "reason": f"Cannot move to {location.key}. Not connected to {game_state.player_location}.",
         }
 
-    if not model.move_entity("Player", location_key):
-        return {"success": False, "new_location": None, "reason": "Player entity is missing from the world model."}
+    if not model.move_entity("Player", location.key):
+        return {
+            "success": False,
+            "new_location": None,
+            "reason": "Player entity is missing from the world model.",
+        }
 
     game_state.player_location = location.key
-    game_state.discovered_keys.add(location_key)
+    game_state.discovered_keys.add(location.key)
     return {"success": True, "new_location": location.key, "reason": f"Moved to {location.key}."}
 
 
@@ -137,14 +256,35 @@ def get_current_context(game_state: GameState) -> dict[str, object]:
     }
 
 
-def move_npc(npc_key: str, new_location: str, game_state: GameState) -> dict[str, object]:
+def move_npc(npc_key: str = "", new_location: str = "", game_state: GameState | None = None) -> dict[str, object]:
+    """
+    中文：
+      将 NPC 移动到指定 location。
+      支持模糊 npc/location 解析。
+
+    English:
+      Move an NPC to a target location.
+      Supports fuzzy npc/location resolution.
+    """
+    if game_state is None:
+        return {"success": False, "reason": "Missing game_state context."}
+
     model = get_runtime_world_model(game_state)
-    npc = model.get_entity(npc_key)
+
+    if not str(npc_key or "").strip() or not str(new_location or "").strip():
+        return {"success": True, "reason": "Missing npc_key or new_location. No NPC movement applied."}
+
+    resolved_npc = _resolve_target_key(model, npc_key)
+    resolved_location = _resolve_target_key(model, new_location)
+
+    npc = model.get_entity(resolved_npc or npc_key)
     if npc is None:
         return {"success": False, "reason": f"NPC '{npc_key}' does not exist."}
+
     if npc.entity_type != "npc":
         return {"success": False, "reason": f"'{npc_key}' is not an NPC."}
-    location = model.get_location(new_location)
+
+    location = model.get_location(resolved_location or new_location)
     if location is None:
         return {"success": False, "reason": f"Location '{new_location}' does not exist."}
 
@@ -223,7 +363,7 @@ VALIDATE_TOOLS = [
                         "description": "Entity key to check (e.g., 'Mitch', 'Town Square')",
                     }
                 },
-                "required": ["entity_key"],
+                "required": [],
             },
         },
     },
@@ -248,7 +388,7 @@ SCENE_TOOL_DEFINITIONS = [
                 "properties": {
                     "location_key": {"type": "string", "description": "Location key to move to"}
                 },
-                "required": ["location_key"],
+                "required": [],
             },
         },
     },

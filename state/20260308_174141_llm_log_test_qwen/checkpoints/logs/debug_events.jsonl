@@ -1,0 +1,2 @@
+{"ts": "2026-03-08T17:41:41-04:00", "turn": 0, "phase": "cli", "event_type": "session_start", "severity": "info", "message": "CLI session started.", "details": {"session_dir": "state\\20260308_174141_llm_log_test_qwen"}}
+{"ts": "2026-03-08T17:41:51-04:00", "turn": 0, "phase": "cli", "event_type": "user_interrupt", "severity": "warning", "message": "Session terminated by user input interrupt.", "details": {"error_type": "KeyboardInterrupt"}}

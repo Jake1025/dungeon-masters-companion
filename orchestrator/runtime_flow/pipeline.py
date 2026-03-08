@@ -1,3 +1,4 @@
+#pipeline.py
 from typing import Any, Dict, Sequence, Optional, List, Callable
 from .conversation_log import History
 from ..llm_interaction.adapter import LLMAdapter
@@ -33,9 +34,8 @@ from ..world_state.tools import (
     clear_turn_orchestration_ctx,
     execute_tool as execute_world_tool,
 )
-
-
 from ..world_state.tool_call_logging import ToolCallLogger
+from ..world_state.debug_event_logging import DebugEventLogger
 
 def _extract_labeled_line(text: str, label: str) -> str:
     pattern = re.compile(rf"(?im)^\s*{re.escape(label)}\s*:\s*(.+?)\s*$")
@@ -83,6 +83,26 @@ def _summary_snippet(text: str, limit: int = 220) -> str:
         return cleaned
     return cleaned[:limit].rstrip() + "..."
 
+
+def _mentions_unresolved_roll_request(text: str) -> bool:
+    cleaned = " ".join(str(text or "").lower().split())
+    if not cleaned:
+        return False
+    markers = (
+        "roll",
+        "skill check",
+        "make a check",
+        "passive perception",
+        "dc ",
+        "investigation check",
+        "perception check",
+        "stealth check",
+        "persuasion check",
+        "athletics check",
+    )
+    return any(marker in cleaned for marker in markers)
+
+
 class StoryEngine:
 
     def __init__(
@@ -123,16 +143,20 @@ class StoryEngine:
         setattr(self.game_state, "_world_model_data_dir", str(source_data_dir))
         setattr(self.game_state, "_runtime_world_model", self.world)
         self.world.starting_location = resolved_starting_location
+
         player_entity = self.world.get_entity("Player")
         if player_entity is not None:
             player_entity.set_location(resolved_starting_location)
+
         self.game_state.player_location = resolved_starting_location
         self.game_state.discovered_keys = {resolved_starting_location}
         self.discovered_keys = self.game_state.discovered_keys
         get_runtime_world_model(self.game_state)
+
         self.roll_mode = (roll_mode or get_roll_mode()).strip().lower()
         if self.roll_mode not in {"auto", "manual"}:
             self.roll_mode = "auto"
+
         self.manual_roll_provider = manual_roll_provider
         if self.roll_mode == "manual" and not callable(self.manual_roll_provider):
             self.roll_mode = "auto"
@@ -144,13 +168,10 @@ class StoryEngine:
             default_options=get_ollama_default_options(),
             stage_options=get_ollama_stage_options(),
             verbose=verbose,
-            # force_retry_stage="plan"
         )
 
         self.steps = build_steps()
         self.snapshot_builder = SnapshotBuilder()
-
-    # -----------------------
 
     def _make_state(self, player_input, intent):
         def apply_relevant_flags(key: str, info: Dict[str, str]) -> Dict[str, str]:
@@ -238,15 +259,8 @@ class StoryEngine:
             entity_info=entity_info,
         )
 
-    # -----------------------
-
     def run_turn(self, player_input: str):
-
         trace = {} if self.adapter.verbose else None
-
-        # -----------------------
-        # INTENT PARSER (kept from original pipeline)
-        # -----------------------
 
         intent_prompt = build_intent_prompt(
             self.history.as_text(limit=6),
@@ -261,11 +275,8 @@ class StoryEngine:
         if trace is not None:
             trace["INTENT_PARSE"] = intent_debug
 
-        # -----------------------
-        # BUILD STATE SNAPSHOT
-        # -----------------------
-
         state = self._make_state(player_input, intent)
+
         def build_state_snapshot():
             scene = self.world.scene_snapshot(self.game_state.player_location)
             return {
@@ -286,10 +297,6 @@ class StoryEngine:
         if trace is not None:
             trace["STATE_BEFORE"] = build_state_snapshot()
 
-        # -----------------------
-        # TURN-LOCAL TODO + PHASE TOOLING (Copilot-style agent loops)
-        # -----------------------
-
         turn_ctx: Dict[str, Any] = {
             "phase": "",
             "todo": [],
@@ -303,22 +310,12 @@ class StoryEngine:
             "current_location": self.game_state.player_location,
         }
 
-        # ============================================================
-        # 中文：
-        #   初始化本回合工具调用日志序号（单调递增）
-        #   用于生成 event_id: turn_xxx:seq:tool_name
-        #
-        # English:
-        #   Initialize per-turn tool log sequence (monotonic counter)
-        #   Used to generate event_id: turn_xxx:seq:tool_name
-        # ============================================================
-
-        tool_logger = ToolCallLogger()   # 自动使用 checkpoint_root/logs
-        turn_ctx["log_seq"] = 0          # 每个 turn 从 0 开始
+        tool_logger = ToolCallLogger()
+        turn_ctx["log_seq"] = 0
+        debug_logger = DebugEventLogger()
 
         action_tool_calls: List[Dict[str, Any]] = []
         bind_turn_orchestration_ctx(self.game_state, turn_ctx)
-
 
         world_tools_by_name = {
             tool["function"]["name"]: tool
@@ -328,6 +325,7 @@ class StoryEngine:
 
         phase_tool_names = {
             "intent": [
+                "get_world_story",
                 "get_world_scene",
                 "get_world_location",
                 "list_world_locations",
@@ -342,6 +340,7 @@ class StoryEngine:
                 "retrieve_memory_tool",
             ],
             "mechanics": [
+                "get_world_story",
                 "get_world_scene",
                 "get_world_location",
                 "list_world_locations",
@@ -359,6 +358,7 @@ class StoryEngine:
                 "skill_check",
                 "get_recent_skill_checks",
                 "move_to_location",
+                "move_npc",
             ],
         }
 
@@ -389,15 +389,8 @@ class StoryEngine:
         def phase_tool_executor(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
             args = dict(arguments or {})
             turn_ctx["current_location"] = self.game_state.player_location
-           
-            # ============================================================
-            # 中文：记录调用前的位置（用于移动/审计 before/after）
-            # English: capture before-location for movement/audit logs
-            # ============================================================
             before_location = getattr(self.game_state, "player_location", None)
-            
-            # Hidden runtime behavior: in manual roll mode, the CLI can supply the player's d20
-            # while the model still calls the same `skill_check` tool and receives a normal result.
+
             if (
                 tool_name == "skill_check"
                 and self.roll_mode == "manual"
@@ -413,11 +406,10 @@ class StoryEngine:
 
             result = execute_world_tool(tool_name, args, self.game_state)
 
-                # --- logging (best-effort) ---
             try:
                 turn_ctx["log_seq"] = int(turn_ctx.get("log_seq", 0)) + 1
                 event_id = tool_logger.build_event_id(
-                    turn=self.turn_index + 1,  # because you increment after commit
+                    turn=self.turn_index + 1,
                     seq=turn_ctx["log_seq"],
                     tool=tool_name,
                 )
@@ -434,7 +426,6 @@ class StoryEngine:
                 )
             except Exception:
                 pass
-            # --- logging end ---
 
             if tool_name in world_tools_by_name:
                 world_call_entry = {
@@ -464,8 +455,10 @@ class StoryEngine:
             return result
 
         def pre_tool_use(tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+            _ = arguments
             phase_name = str(turn_ctx.get("phase", "")).strip().lower()
             allowed = set(phase_tool_names.get(phase_name, []))
+
             if tool_name not in allowed:
                 return {"allow": False, "reason": f"{tool_name} is not available in {phase_name or 'current'} phase."}
 
@@ -476,6 +469,7 @@ class StoryEngine:
             return {"allow": True}
 
         def post_tool_use(tool_name: str, arguments: Dict[str, Any], payload: Dict[str, Any]) -> Optional[str]:
+            _ = tool_name
             _ = arguments
             success = payload.get("ok")
             if success is None:
@@ -485,12 +479,28 @@ class StoryEngine:
             return "Tool call failed. Re-evaluate the step, then either try a different grounded tool call or finish with what is known."
 
         def phase_response_hook(assistant_text: str, tool_calls: Sequence[Dict[str, Any]], _iteration: int) -> Optional[str]:
-            if not str(assistant_text or "").strip():
+            text = str(assistant_text or "").strip()
+            has_tool_calls = len(tool_calls) > 0
+
+            if not text and has_tool_calls:
+                return None
+
+            if not text and not has_tool_calls:
                 return "Every response must include a short `Decision Summary:` line."
-            if not _extract_labeled_line(assistant_text, "Decision Summary"):
+
+            if not _extract_labeled_line(text, "Decision Summary"):
                 return "Every response must begin with `Decision Summary: ...`."
+
             if len(tool_calls) > 1:
                 return "Use at most one tool call per response."
+
+            if (
+                str(turn_ctx.get("phase", "")).strip().lower() == "mechanics"
+                and not has_tool_calls
+                and _mentions_unresolved_roll_request(text)
+            ):
+                return "If a roll/check is needed, call `skill_check` in mechanics. Do not defer player rolls to narration."
+
             return None
 
         def intent_stop_hook(assistant_text: str, _stop_hook_active: bool) -> Optional[str]:
@@ -538,6 +548,18 @@ class StoryEngine:
             turn_ctx["intent_summary"] = plan_summary
 
         if not turn_ctx["todo"]:
+            debug_logger.log_event(
+                game_state=self.game_state,
+                turn=self.turn_index + 1,
+                phase="intent",
+                event_type="fallback_plan",
+                severity="warning",
+                message="Intent phase finished without a todo plan; fallback todo was generated.",
+                details={
+                    "player_input": player_input,
+                    "intent_summary": turn_ctx.get("intent_summary", ""),
+                },
+            )
             fallback_lines: list[str] = []
             action = str(intent.get("action_category") or intent.get("action") or "other").lower()
             targets = list(intent.get("targets") or [])
@@ -583,6 +605,18 @@ class StoryEngine:
         mechanics_phase_text = str(mechanics_loop.get("final_answer", "") or "").strip()
 
         if mechanics_loop.get("status") != "completed":
+            debug_logger.log_event(
+                game_state=self.game_state,
+                turn=self.turn_index + 1,
+                phase="mechanics",
+                event_type="loop_incomplete",
+                severity="warning",
+                message="Mechanics phase did not complete normally.",
+                details={
+                    "status": mechanics_loop.get("status"),
+                    "todo_count": len(turn_ctx["todo"]),
+                },
+            )
             for item in turn_ctx["todo"]:
                 if str(item.get("status", "pending")) in TODO_ACTIVE_STATUSES:
                     item["status"] = "blocked"
@@ -598,6 +632,7 @@ class StoryEngine:
                 "Mechanics phase completed with todo counts "
                 + json.dumps(counts, ensure_ascii=True)
             )
+
         if mechanics_loop.get("status") == "completed":
             for item in turn_ctx["todo"]:
                 if str(item.get("status", "pending")) in TODO_ACTIVE_STATUSES:
@@ -609,10 +644,6 @@ class StoryEngine:
         blocked_count = counts.get("blocked", 0)
         turn_ctx["mechanics_status"] = "ITEMS_BLOCKED" if blocked_count > 0 else "ALL_ITEMS_RESOLVED"
 
-        # -----------------------
-        # REBUILD STATE WITH UPDATED GAME STATE
-        # -----------------------
-
         if self.adapter.verbose:
             print("\n[STATE] Rebuilding state with updated game state")
             print(f"[STATE] Player location: {self.game_state.player_location}")
@@ -623,10 +654,6 @@ class StoryEngine:
 
         if trace is not None:
             trace["STATE_AFTER_ACTION"] = build_state_snapshot()
-
-        # -----------------------
-        # NARRATE (keep existing narrative step + validators)
-        # -----------------------
 
         counts = compute_todo_counts()
         verdict = "revise" if counts.get("blocked", 0) > 0 else "approve"
@@ -644,10 +671,6 @@ class StoryEngine:
             self.adapter,
             narrate_prompt,
         )
-
-        # -----------------------
-        # COMMIT TURN
-        # -----------------------
 
         self.history.add_player_turn(player_input)
         self.history.add_dm_turn(narrative)
@@ -699,7 +722,6 @@ class StoryEngine:
         clear_turn_orchestration_ctx(self.game_state)
         return result
 
-    # -----------------------
     def generate_intro(self):
         intro_scene = self.world.scene_snapshot(self.game_state.player_location)
 
@@ -738,8 +760,6 @@ class StoryEngine:
         self.summary.add("Intro", recap or _summary_snippet(narrative))
 
         return {"ic": narrative, "recap": recap}
-
-    # -----------------------
 
     def snapshot(self):
         return self.snapshot_builder.build(self)

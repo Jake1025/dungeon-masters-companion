@@ -1,0 +1,1 @@
+{"ts": "2026-03-08T17:36:52-04:00", "turn": 0, "phase": "cli", "event_type": "session_start", "severity": "info", "message": "CLI session started.", "details": {"session_dir": "E:\\projectcapstone\\repow8\\dungeon-masters-companion\\_tmp_debug_e2e_state\\20260308_173652_debug_e2e_test"}}

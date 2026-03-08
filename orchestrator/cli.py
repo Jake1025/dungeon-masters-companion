@@ -1,3 +1,4 @@
+#cli.py
 from __future__ import annotations
 import argparse
 import json
@@ -10,6 +11,8 @@ from .app_config import get_ollama_default_model, get_roll_mode
 from .runtime_flow.pipeline import StoryEngine
 from .world_state.tool_runtime import save_runtime_world_checkpoint, set_world_checkpoint_root
 from .world_state.world_model import build_world_model
+
+from .world_state.debug_event_logging import DebugEventLogger
 
 DEFAULT_MODEL = get_ollama_default_model()
 DEFAULT_TRUNCATE_LIMIT = 200
@@ -389,6 +392,10 @@ def main() -> None:
         manual_roll_provider=_prompt_manual_d20_roll if configured_roll_mode == "manual" else None,
     )
 
+    # ----- Debug Using -----
+
+    debug_logger = DebugEventLogger()
+
     # ----- Session Folder -----
 
     session_dir: Path | None = None
@@ -400,6 +407,16 @@ def main() -> None:
         set_world_checkpoint_root(engine.game_state, session_dir / "checkpoints")
         print(f"Session snapshots will be written to: {session_dir}")
 
+    debug_logger.log_event(
+        game_state=engine.game_state,
+        turn=0,
+        phase="cli",
+        event_type="session_start",
+        severity="info",
+        message="CLI session started.",
+        details={"session_dir": str(session_dir)},
+    )
+
     # ----- Intro -----
 
     print("Story explorer. Type 'quit' to leave.")
@@ -407,7 +424,16 @@ def main() -> None:
     try:
         intro = engine.generate_intro()
         print(f"\n{intro['ic']}\n")
-    except Exception:
+    except Exception as exc:
+        debug_logger.log_event(
+            game_state=engine.game_state,
+            turn=0,
+            phase="intro",
+            event_type="intro_fallback",
+            severity="error",
+            message="Intro generation failed; falling back to starting_state.",
+            details={"error": str(exc)},
+        )
         print(f"\n[Intro] {engine.starting_state}\n")
 
     # Save initial snapshot
@@ -422,7 +448,16 @@ def main() -> None:
     while True:
         try:
             player_line = input("> ").strip()
-        except (EOFError, KeyboardInterrupt):
+        except (EOFError, KeyboardInterrupt) as exc:
+            debug_logger.log_event(
+                game_state=engine.game_state,
+                turn=engine.turn_index,
+                phase="cli",
+                event_type="user_interrupt",
+                severity="warning",
+                message="Session terminated by user input interrupt.",
+                details={"error_type": type(exc).__name__},
+            )
             print("\nExiting.")
             break
 
