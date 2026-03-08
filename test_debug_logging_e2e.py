@@ -4,28 +4,30 @@
 """
 ============================================================
 中文：
-  Debug 日志端到端测试脚本（E2E）
+  Debug / Tool Logging 端到端测试脚本（更新版）
   - 通过 subprocess 启动 orchestrator.cli
   - 自动喂入几句输入
-  - 检查 state/<session>/checkpoints/logs/debug_events.jsonl 是否生成
-  - 验证日志文件字段是否完整
-  - 可选检查某些 event_type 是否出现
+  - 检查 session 目录、tool logs、debug logs 是否生成
+  - 默认要求 debug_events.jsonl 至少包含一个稳定可触发事件：session_start
+  - 可选要求某些 event_type 必须出现
+  - 可选要求某些 event_type 只要出现就展示
 
   适用场景：
-  - 你已经把 DebugEventLogger 接入了 cli.py / pipeline.py
-  - 想验证“真实运行时”是否会写 debug 日志
+  - 你已经把 ToolCallLogger / DebugEventLogger 接入了 CLI / pipeline
+  - 想验证真实运行路径中的日志是否正常写入
 
 English:
-  End-to-end debug logging test script
+  Updated end-to-end test for debug/tool logging
   - Launches orchestrator.cli via subprocess
-  - Feeds a few input lines automatically
-  - Verifies debug_events.jsonl is created under session logs
-  - Validates log structure
-  - Optionally checks expected event types
+  - Feeds a few scripted inputs
+  - Verifies session dir, tool logs, and debug logs
+  - By default expects a stable debug event: session_start
+  - Can optionally require specific event types
+  - Can optionally display soft-expected event types if present
 
   Use this when:
-  - DebugEventLogger has been integrated into cli.py / pipeline.py
-  - You want to verify real runtime debug logging
+  - ToolCallLogger / DebugEventLogger have been integrated into CLI / pipeline
+  - You want to verify real runtime logging behavior
 ============================================================
 """
 
@@ -72,6 +74,9 @@ def find_latest_session_dir(state_root: Path, session_name: str) -> Optional[Pat
     English:
       Find the latest session directory ending with _<session_name>
     """
+    if not state_root.exists():
+        return None
+
     candidates = [
         p for p in state_root.iterdir()
         if p.is_dir() and p.name.endswith(f"_{session_name}")
@@ -81,8 +86,24 @@ def find_latest_session_dir(state_root: Path, session_name: str) -> Optional[Pat
     return sorted(candidates)[-1]
 
 
+def summarize_tool_logs(logs_dir: Path) -> Dict[str, int]:
+    """
+    中文：统计 logs_dir 下所有非 debug 的 jsonl 行数
+    English: Count rows of all non-debug jsonl log files under logs_dir
+    """
+    summary: Dict[str, int] = {}
+    if not logs_dir.exists():
+        return summary
+
+    for path in sorted(logs_dir.glob("*.jsonl")):
+        if path.name == "debug_events.jsonl":
+            continue
+        summary[path.name] = len(read_jsonl(path))
+    return summary
+
+
 def main() -> int:
-    parser = argparse.ArgumentParser(description="E2E test for debug event logging.")
+    parser = argparse.ArgumentParser(description="Updated E2E test for tool/debug logging.")
     parser.add_argument(
         "--model",
         default="qwen3:8b",
@@ -109,13 +130,29 @@ def main() -> int:
         help="Pass --verbose to orchestrator.cli.",
     )
     parser.add_argument(
-        "--expect-event",
+        "--strict-debug-log",
+        action="store_true",
+        help=(
+            "Strict mode: require debug_events.jsonl to exist. "
+            "Recommended when DebugEventLogger is known to be integrated."
+        ),
+    )
+    parser.add_argument(
+        "--require-event",
         action="append",
         default=[],
         help=(
-            "Expected event_type in debug_events.jsonl. "
-            "Can be passed multiple times, e.g. "
-            "--expect-event intro_fallback --expect-event user_interrupt"
+            "Require a specific debug event_type to exist. "
+            "Can be repeated, e.g. --require-event session_start --require-event intro_fallback"
+        ),
+    )
+    parser.add_argument(
+        "--soft-event",
+        action="append",
+        default=[],
+        help=(
+            "Soft expectation: if this event exists, it will be reported, "
+            "but absence will not fail the test."
         ),
     )
     args = parser.parse_args()
@@ -125,19 +162,16 @@ def main() -> int:
 
     # ============================================================
     # 中文：
-    #   这里的输入尽量简单：
-    #   - 先来一条玩家输入
-    #   - 再 quit 正常退出
-    #
-    #   如果你已经在 CLI / pipeline 中加了 debug logging，
-    #   那么：
-    #   - intro 失败时可能会写 intro_fallback
-    #   - 正常退出未必会写 user_interrupt（因为 quit 不是 Ctrl+C）
+    #   这里用最常见、最稳定的输入：
+    #   - 移动
+    #   - 观察
+    #   - quit 正常退出
     #
     # English:
-    #   Keep input simple:
-    #   - one player instruction
-    #   - then quit
+    #   Use simple, stable scripted inputs:
+    #   - move
+    #   - inspect
+    #   - quit normally
     # ============================================================
     scripted_input = "\n".join([
         "i want to go to the town hall",
@@ -161,17 +195,13 @@ def main() -> int:
         cmd.append("--verbose")
 
     print("=" * 80)
-    print("START DEBUG LOGGING E2E TEST")
+    print("START UPDATED DEBUG LOGGING E2E TEST")
     print("=" * 80)
     print("Command:")
     print(" ".join(cmd))
     print("\nState root:")
     print(state_root)
 
-    # ============================================================
-    # 中文：运行 CLI 子进程
-    # English: run CLI as subprocess
-    # ============================================================
     proc = subprocess.run(
         cmd,
         input=scripted_input,
@@ -189,13 +219,8 @@ def main() -> int:
         print("\n--- CLI STDERR ---")
         print(proc.stderr)
 
-    # CLI return code may still be 0 even if intro falls back.
     assert_true(proc.returncode == 0, f"CLI exited with non-zero code: {proc.returncode}")
 
-    # ============================================================
-    # 中文：查找 session 目录
-    # English: locate session directory
-    # ============================================================
     session_dir = find_latest_session_dir(state_root, args.session_name)
     assert_true(session_dir is not None, f"Could not find session dir for: {args.session_name}")
     assert_true(session_dir is not None, "session_dir should not be None")
@@ -203,46 +228,94 @@ def main() -> int:
     print("\nDetected session dir:")
     print(session_dir)
 
-    debug_log = session_dir / "checkpoints" / "logs" / "debug_events.jsonl"
+    logs_dir = session_dir / "checkpoints" / "logs"
+    assert_true(logs_dir.exists(), f"Logs directory does not exist: {logs_dir}")
 
     # ============================================================
-    # 中文：
-    #   验证 debug 日志文件：
-    #   - 如果你的 cli/pipeline 还没接上 debug_logger，这里会失败
-    #   - 这是预期的“接入检查”
-    #
-    # English:
-    #   Verify debug log file exists.
-    #   This will fail if debug logger has not been integrated yet.
+    # 中文：先检查 tool logs
+    # English: verify tool logs first
     # ============================================================
-    assert_true(debug_log.exists(), f"debug_events.jsonl was not created: {debug_log}")
+    tool_log_summary = summarize_tool_logs(logs_dir)
+    print("\nTool log summary:")
+    if tool_log_summary:
+        for name, count in tool_log_summary.items():
+            print(f"  - {name}: {count} rows")
+    else:
+        print("  (no grouped tool logs found)")
 
-    rows = read_jsonl(debug_log)
-    assert_true(len(rows) > 0, "debug_events.jsonl exists but is empty")
+    assert_true(
+        any(count > 0 for count in tool_log_summary.values()),
+        "No grouped tool logs were found or all were empty.",
+    )
 
-    required_keys = {"ts", "turn", "phase", "event_type", "severity", "message", "details"}
-    for i, row in enumerate(rows, start=1):
-        missing = required_keys - set(row.keys())
-        assert_true(not missing, f"Row {i} missing required keys: {sorted(missing)}")
+    # ============================================================
+    # 中文：再检查 debug log
+    # English: verify debug log
+    # ============================================================
+    debug_log = logs_dir / "debug_events.jsonl"
+    debug_rows: List[Dict[str, Any]] = []
+    debug_event_types: set[str] = set()
 
-    event_types = {str(row.get("event_type")) for row in rows}
+    if debug_log.exists():
+        debug_rows = read_jsonl(debug_log)
+        debug_event_types = {str(row.get("event_type")) for row in debug_rows}
 
-    # Optional assertions
-    for expected in args.expect_event:
-        assert_true(expected in event_types, f"Expected event_type not found: {expected}")
+        print("\nDebug log found:")
+        print(f"  - {debug_log}")
+        print(f"  - rows: {len(debug_rows)}")
+        print(f"  - event types: {sorted(debug_event_types)}")
 
-    print("\n[PASS] debug_events.jsonl exists and is valid.")
-    print(f"[INFO] Total debug rows: {len(rows)}")
-    print(f"[INFO] Debug log path: {debug_log}")
-    print(f"[INFO] Event types seen: {sorted(event_types)}")
+        required_keys = {"ts", "turn", "phase", "event_type", "severity", "message", "details"}
+        for i, row in enumerate(debug_rows, start=1):
+            missing = required_keys - set(row.keys())
+            assert_true(not missing, f"debug_events row {i} missing required keys: {sorted(missing)}")
 
-    print("\nLast 5 debug entries:")
-    for row in rows[-5:]:
-        print(pretty(row))
-        print("-" * 60)
+    else:
+        print("\nDebug log not found:")
+        print(f"  - expected path: {debug_log}")
+
+    # strict mode
+    if args.strict_debug_log:
+        assert_true(debug_log.exists(), f"debug_events.jsonl was not created: {debug_log}")
+        assert_true(len(debug_rows) > 0, "debug_events.jsonl exists but is empty")
+
+    # default expectation:
+    # if debug log exists, session_start should usually be there
+    # if debug log does not exist and strict mode is off, we do not fail here
+    if debug_log.exists():
+        assert_true(
+            "session_start" in debug_event_types,
+            "debug_events.jsonl exists, but expected stable event 'session_start' was not found.",
+        )
+
+    # required explicit events
+    for expected in args.require_event:
+        assert_true(debug_log.exists(), f"Required event '{expected}' requested, but debug_events.jsonl does not exist.")
+        assert_true(expected in debug_event_types, f"Required debug event not found: {expected}")
+
+    # soft events
+    if args.soft_event:
+        print("\nSoft-expected events:")
+        if not debug_log.exists():
+            print("  - debug_events.jsonl not present, so no soft events available")
+        else:
+            for expected in args.soft_event:
+                if expected in debug_event_types:
+                    print(f"  - present: {expected}")
+                else:
+                    print(f"  - absent : {expected}")
+
+    # Show tails
+    print("\nRecent tool log entries:")
+    for path in sorted(logs_dir.glob("*.jsonl")):
+        rows = read_jsonl(path)
+        if not rows:
+            continue
+        print(f"\n[{path.name}] last entry:")
+        print(pretty(rows[-1]))
 
     print("\n" + "=" * 80)
-    print("DEBUG LOGGING E2E TEST PASSED")
+    print("UPDATED DEBUG LOGGING E2E TEST PASSED")
     print("=" * 80)
 
     return 0

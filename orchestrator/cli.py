@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
@@ -18,6 +19,40 @@ DEFAULT_MODEL = get_ollama_default_model()
 DEFAULT_TRUNCATE_LIMIT = 200
 TRACE_SKIP_KEYS = {"TOOL_CALLS", "ACTION_TOOLS", "MOVEMENT_BLOCKED", "TURN_TODO", "MECHANICS_WORLD_TOOLS"}
 
+def _install_global_exception_hook(debug_logger: DebugEventLogger, engine: StoryEngine) -> None:
+    """
+    中文：
+      安装全局未捕获异常钩子：
+      - 记录最终冒泡到顶层的异常
+      - 不替代 Python 默认异常输出，只是在此之前追加一条 debug 日志
+
+    English:
+      Install a global uncaught-exception hook:
+      - Records exceptions that bubble to the top level
+      - Does not replace Python's default exception output; only logs before delegating
+    """
+    original_hook = sys.excepthook
+
+    def _hook(exc_type, exc_value, exc_traceback):
+        try:
+            debug_logger.log_event(
+                game_state=engine.game_state,
+                turn=getattr(engine, "turn_index", None),
+                phase="global",
+                event_type="uncaught_exception",
+                severity="critical",
+                message="Uncaught exception reached global exception hook.",
+                details={
+                    "error_type": getattr(exc_type, "__name__", str(exc_type)),
+                    "error": str(exc_value),
+                },
+            )
+        except Exception:
+            pass
+
+        original_hook(exc_type, exc_value, exc_traceback)
+
+    sys.excepthook = _hook
 
 def _default_world_model():
     return build_world_model()
@@ -395,6 +430,17 @@ def main() -> None:
     # ----- Debug Using -----
 
     debug_logger = DebugEventLogger()
+
+    # ============================================================
+    # 中文：
+    #   安装全局未捕获异常钩子
+    #   - 用于记录最终未被处理的异常
+    #
+    # English:
+    #   Install global uncaught-exception hook
+    #   - Used to record exceptions that are not handled elsewhere
+    # ============================================================
+    _install_global_exception_hook(debug_logger, engine)
 
     # ----- Session Folder -----
 
