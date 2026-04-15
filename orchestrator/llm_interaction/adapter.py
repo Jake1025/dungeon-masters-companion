@@ -3,10 +3,17 @@ from __future__ import annotations
 import copy
 import json
 import logging
+import os
 from typing import Any, Callable, Dict, Mapping, Optional, Sequence, Union
 
-import ollama
-from ollama import ResponseError
+try:
+    import ollama
+    from ollama import ResponseError
+except ImportError:  # pragma: no cover - optional dependency per provider
+    ollama = None
+
+    class ResponseError(Exception):
+        pass
 
 logger = logging.getLogger(__name__)
 DMC_ROLL_REQUIRED_SENTINEL = "__DMC_ROLL_REQUIRED__"
@@ -26,6 +33,7 @@ class LLMAdapter:
         self,
         model: str,
         *,
+        provider: str = "ollama",
         default_options: Optional[Mapping[str, Any]] = None,
         stage_options: Optional[Mapping[str, Mapping[str, Any]]] = None,
         max_attempts: int = 3,
@@ -33,12 +41,41 @@ class LLMAdapter:
         force_retry_stage: Optional[str] = None,  # used ONLY by LLMStep
     ) -> None:
 
+        self.provider = str(provider or "ollama").strip().lower()
         self.model = model
         self.default_options = dict(default_options or {})
         self.stage_options = dict(stage_options or {})
         self.max_attempts = max(1, max_attempts)
         self.verbose = verbose
         self.force_retry_stage = force_retry_stage
+        self._openai_client: Any = None
+        self._anthropic_client: Any = None
+
+    def _require_openai_client(self):
+        if self._openai_client is not None:
+            return self._openai_client
+        try:
+            from openai import OpenAI
+        except ImportError as exc:
+            raise LLMError("OpenAI provider requires the `openai` package.") from exc
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise LLMError("OPENAI_API_KEY is required when provider=openai.")
+        self._openai_client = OpenAI(api_key=api_key)
+        return self._openai_client
+
+    def _require_anthropic_client(self):
+        if self._anthropic_client is not None:
+            return self._anthropic_client
+        try:
+            import anthropic
+        except ImportError as exc:
+            raise LLMError("Anthropic provider requires the `anthropic` package.") from exc
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise LLMError("ANTHROPIC_API_KEY is required when provider=anthropic.")
+        self._anthropic_client = anthropic.Anthropic(api_key=api_key)
+        return self._anthropic_client
 
     # -------------------------------------------------
 
@@ -56,7 +93,11 @@ class LLMAdapter:
                 print(f"[LLM] Transport attempt {attempt} for stage '{stage}'")
 
             try:
-                response = ollama.chat(model=self.model, messages=messages, options=options)
+                response = self._chat_with_retry(
+                    messages=messages,
+                    options=options,
+                    stage=stage,
+                )
                 content = self._extract_content(response)
 
             except ResponseError as exc:
@@ -112,12 +153,21 @@ class LLMAdapter:
             logger.info("[%s] JSON request started", stage.upper())
 
         for attempt in range(1, self.max_attempts + 1):
-            response = ollama.chat(
-                model=self.model,
-                messages=messages,
-                format="json",
-                options=options,
-            )
+            if self.provider == "ollama":
+                if ollama is None:
+                    raise LLMError("Ollama provider requires the `ollama` package.")
+                response = ollama.chat(
+                    model=self.model,
+                    messages=messages,
+                    format="json",
+                    options=options,
+                )
+            else:
+                response = self._chat_with_retry(
+                    messages=messages,
+                    options=options,
+                    stage=stage,
+                )
 
             raw = self._extract_content(response)
 
@@ -162,6 +212,26 @@ class LLMAdapter:
 
     @staticmethod
     def _extract_content(response: Any) -> str:
+        if hasattr(response, "choices"):  # OpenAI chat completion
+            choices = getattr(response, "choices", None) or []
+            if choices:
+                message = getattr(choices[0], "message", None)
+                if message is not None:
+                    content = getattr(message, "content", "")
+                    if isinstance(content, list):
+                        return "".join(str(part) for part in content)
+                    return str(content or "")
+
+        if hasattr(response, "content"):  # Anthropic messages response
+            blocks = getattr(response, "content", None) or []
+            texts: list[str] = []
+            for block in blocks:
+                block_type = getattr(block, "type", None)
+                if block_type == "text":
+                    texts.append(str(getattr(block, "text", "") or ""))
+            if texts:
+                return "\n".join(part for part in texts if part).strip()
+
         message = getattr(response, "message", None)
 
         if message is None and isinstance(response, dict):
@@ -222,6 +292,42 @@ class LLMAdapter:
         Normalize Ollama tool calls into a plain list of dicts:
         [{'function': {'name': str, 'arguments': {...}}}, ...]
         """
+        # OpenAI chat.completions response
+        if hasattr(response, "choices"):
+            choices = getattr(response, "choices", None) or []
+            if choices:
+                message = getattr(choices[0], "message", None)
+                if message is not None:
+                    tool_calls = getattr(message, "tool_calls", None) or []
+                    normalized: list[dict[str, Any]] = []
+                    for tc in tool_calls:
+                        if hasattr(tc, "model_dump"):
+                            normalized.append(tc.model_dump(exclude_none=True))
+                        elif isinstance(tc, dict):
+                            normalized.append(tc)
+                    return normalized
+
+        # Anthropic messages response
+        if hasattr(response, "content"):
+            blocks = getattr(response, "content", None) or []
+            normalized: list[dict[str, Any]] = []
+            for idx, block in enumerate(blocks):
+                if getattr(block, "type", None) != "tool_use":
+                    continue
+                name = str(getattr(block, "name", "") or "")
+                arguments = getattr(block, "input", {}) or {}
+                tool_id = str(getattr(block, "id", "") or f"call_{idx}")
+                normalized.append(
+                    {
+                        "id": tool_id,
+                        "function": {
+                            "name": name,
+                            "arguments": arguments,
+                        },
+                    }
+                )
+            return normalized
+
         message = getattr(response, "message", None)
         if message is None and isinstance(response, dict):
             message = response.get("message")
@@ -290,28 +396,6 @@ class LLMAdapter:
 
         return normalized
 
-    @staticmethod
-    def _build_callable_tool_executor(
-        tools: Optional[Sequence[Union[Mapping[str, Any], Any, Callable]]],
-    ) -> Optional[Callable[[str, Mapping[str, Any]], Any]]:
-        tool_map: Dict[str, Callable] = {}
-        for tool in tools or []:
-            if callable(tool):
-                name = getattr(tool, "__name__", "")
-                if name:
-                    tool_map[name] = tool
-
-        if not tool_map:
-            return None
-
-        def _executor(tool_name: str, arguments: Mapping[str, Any]) -> Any:
-            func = tool_map.get(tool_name)
-            if func is None:
-                raise LLMError(f"Unknown callable tool '{tool_name}'")
-            return func(**dict(arguments))
-
-        return _executor
-
     def _chat_with_retry(
         self,
         messages: list[dict[str, Any]],
@@ -324,17 +408,116 @@ class LLMAdapter:
             if self.verbose:
                 print(f"[LLM] Transport attempt {attempt} for stage '{stage}'")
             try:
-                return ollama.chat(
-                    model=self.model,
-                    messages=messages,
-                    tools=tools,
-                    options=options,
-                )
+                if self.provider == "ollama":
+                    if ollama is None:
+                        raise LLMError("Ollama provider requires the `ollama` package.")
+                    return ollama.chat(
+                        model=self.model,
+                        messages=messages,
+                        tools=tools,
+                        options=options,
+                    )
+                if self.provider == "openai":
+                    return self._openai_chat(messages=messages, options=options, tools=tools)
+                if self.provider == "anthropic":
+                    return self._anthropic_chat(messages=messages, options=options, tools=tools)
+                raise LLMError(f"Unsupported provider '{self.provider}'.")
             except ResponseError as exc:
                 raw = self._extract_raw_from_error(exc)
                 if raw:
                     return {"message": {"content": raw}}
+            except Exception:
+                if attempt >= self.max_attempts:
+                    raise
         raise LLMError(f"Stage '{stage}' failed after {self.max_attempts} attempts.")
+
+    def _openai_chat(
+        self,
+        *,
+        messages: list[dict[str, Any]],
+        options: Dict[str, Any],
+        tools: Optional[Sequence[Union[Mapping[str, Any], Any, Callable]]] = None,
+    ) -> Any:
+        client = self._require_openai_client()
+        kwargs: dict[str, Any] = {
+            "model": self.model,
+            "messages": messages,
+            **options,
+        }
+        if tools:
+            kwargs["tools"] = list(tools)
+        return client.chat.completions.create(**kwargs)
+
+    @staticmethod
+    def _to_anthropic_messages(messages: list[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
+        system_parts: list[str] = []
+        converted: list[dict[str, Any]] = []
+
+        for msg in messages:
+            role = str(msg.get("role", "")).strip().lower()
+            if role == "system":
+                system_parts.append(str(msg.get("content", "") or ""))
+                continue
+            if role == "tool":
+                content = str(msg.get("content", "") or "")
+                tool_name = str(msg.get("tool_name", "") or "")
+                converted.append(
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "tool_result",
+                                "tool_use_id": str(msg.get("tool_call_id") or f"{tool_name}_result"),
+                                "content": content,
+                            }
+                        ],
+                    }
+                )
+                continue
+            converted.append(
+                {
+                    "role": "assistant" if role == "assistant" else "user",
+                    "content": str(msg.get("content", "") or ""),
+                }
+            )
+        return "\n\n".join(part for part in system_parts if part).strip(), converted
+
+    def _anthropic_chat(
+        self,
+        *,
+        messages: list[dict[str, Any]],
+        options: Dict[str, Any],
+        tools: Optional[Sequence[Union[Mapping[str, Any], Any, Callable]]] = None,
+    ) -> Any:
+        client = self._require_anthropic_client()
+        system_text, anthropic_messages = self._to_anthropic_messages(messages)
+        kwargs: dict[str, Any] = {
+            "model": self.model,
+            "messages": anthropic_messages,
+            "max_tokens": int(options.get("max_tokens", 1024)),
+        }
+        if system_text:
+            kwargs["system"] = system_text
+        if "temperature" in options:
+            kwargs["temperature"] = options["temperature"]
+        if tools:
+            anthropic_tools: list[dict[str, Any]] = []
+            for tool in tools:
+                if not isinstance(tool, Mapping):
+                    continue
+                function_payload = tool.get("function")
+                if not isinstance(function_payload, Mapping):
+                    continue
+                anthropic_tools.append(
+                    {
+                        "name": str(function_payload.get("name", "")),
+                        "description": str(function_payload.get("description", "")),
+                        "input_schema": dict(function_payload.get("parameters", {})),
+                    }
+                )
+            if anthropic_tools:
+                kwargs["tools"] = anthropic_tools
+        return client.messages.create(**kwargs)
 
     @staticmethod
     def _extract_raw_from_error(exc: Exception) -> Optional[str]:
@@ -538,6 +721,7 @@ class LLMAdapter:
 
                 tool_entry = {
                     "iteration": iteration,
+                    "id": call.get("id"),
                     "name": tool_name,
                     "arguments": copy.deepcopy(arguments),
                     "result": copy.deepcopy(tool_payload),
@@ -548,6 +732,7 @@ class LLMAdapter:
                 convo_messages.append(
                     {
                         "role": "tool",
+                        "tool_call_id": call.get("id"),
                         "tool_name": tool_name,
                         "content": json.dumps(tool_payload, separators=(",", ":"), ensure_ascii=True),
                     }

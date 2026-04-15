@@ -1,25 +1,50 @@
 {
-  "ollama": {
-    "default_model": "llama3.1:8b",
-    "model_choices": [
-      "llama3.1:8b",
-      "gpt-oss:20b"
-    ],
-    "default_options": {
-      "num_ctx": 8192,
-      "temperature": 0.2,
-      "top_p": 0.5,
-      "repeat_penalty": 1.0,
-      "top_k": 10,
-      "min_p": 0.1
-    },
-    "stage_options": {
-      "narrate": {
-        "temperature": 0.75,
-        "top_p": 0.93,
-        "repeat_penalty": 1.15,
-        "top_k": 50,
-        "min_p": 0.05
+  "llm": {
+    "default_provider": "ollama",
+    "providers": {
+      "ollama": {
+        "default_model": "llama3.1:8b",
+        "model_choices": [
+          "llama3.1:8b",
+          "gpt-oss:20b"
+        ],
+        "default_options": {
+          "num_ctx": 8192,
+          "temperature": 0.2,
+          "top_p": 0.5,
+          "repeat_penalty": 1.0,
+          "top_k": 10,
+          "min_p": 0.1
+        },
+        "stage_options": {
+          "narrate": {
+            "temperature": 0.75,
+            "top_p": 0.93,
+            "repeat_penalty": 1.15,
+            "top_k": 50,
+            "min_p": 0.05
+          }
+        }
+      },
+      "openai": {
+        "default_model": "gpt-4o-mini",
+        "model_choices": [
+          "gpt-4o-mini",
+          "gpt-4.1-mini"
+        ],
+        "default_options": {
+          "temperature": 0.2
+        }
+      },
+      "anthropic": {
+        "default_model": "claude-3-5-haiku-latest",
+        "model_choices": [
+          "claude-3-5-haiku-latest",
+          "claude-3-7-sonnet-latest"
+        ],
+        "default_options": {
+          "temperature": 0.2
+        }
       }
     }
   },

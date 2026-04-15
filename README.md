@@ -4,6 +4,17 @@ The Dungeon Masters Companion is a proposed structure for creating a MCP-powered
 ## Quickstart
 - Default demo (built-in tavern nodes): `python -m orchestrator.cli`
 - Add `--verbose` to see planner/validator prompts, and `--starting-state` if you want to override the default opening.
+- Choose provider/model explicitly: `python -m orchestrator.cli --provider ollama --model llama3.1:8b`
+- Cloud providers are also supported:
+  - OpenAI: set `OPENAI_API_KEY`, then use `--provider openai`
+  - Anthropic: set `ANTHROPIC_API_KEY`, then use `--provider anthropic`
+
+## LLM Providers + Agent Loop
+- The orchestrator now supports a provider-agnostic adapter (`ollama`, `openai`, `anthropic`) with one config surface in `orchestrator/app_config.json`.
+- Turn execution follows a staged agent loop:
+  1. **Intent phase** creates a short actionable todo list with read-only tools.
+  2. **Mechanics phase** executes world tools and resolves rolls/state transitions.
+  3. **Narrate phase** produces final prose from resolved mechanics.
 
 ## Offline Frequency + Synonyms (wordfreq + WordNet)
 This repo now includes `orchestrator/lexicon.py`, an offline-capable API for English frequency and synonyms.
