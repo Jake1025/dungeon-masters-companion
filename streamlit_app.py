@@ -663,6 +663,8 @@ def apply_world_model_to_engine(
     sync_runtime_story_status: bool = False,
     move_player_to_start: bool = False,
 ) -> None:
+    from orchestrator.world_state.story import recompute_discovered_locations
+
     engine.world = model
     setattr(engine.game_state, "_runtime_world_model", model)
     old_index = int(getattr(engine.beats, "index", 0) or 0)
@@ -684,9 +686,11 @@ def apply_world_model_to_engine(
     if target_location and model.get_location(target_location) is not None:
         sync_player_location(engine, target_location)
 
-    engine.game_state.discovered_keys.intersection_update(set(model.all_keys()))
+    all_keys = set(model.all_keys())
+    engine.game_state.visited_locations.intersection_update(all_keys)
     if engine.game_state.player_location:
-        engine.game_state.discovered_keys.add(engine.game_state.player_location)
+        engine.game_state.visited_locations.add(engine.game_state.player_location)
+    recompute_discovered_locations(engine.game_state, model)
     sync_npc_locations(engine)
     engine.world.sync_actor_inventories()
 
@@ -763,9 +767,11 @@ def sync_npc_locations(engine: StoryEngine) -> None:
 
 
 def sync_player_location(engine: StoryEngine, location_key: str) -> None:
+    from orchestrator.world_state.story import recompute_discovered_locations
+
     engine.game_state.player_location = str(location_key or "").strip()
-    engine.game_state.discovered_keys.add(engine.game_state.player_location)
-    engine.discovered_keys = engine.game_state.discovered_keys
+    engine.game_state.visited_locations.add(engine.game_state.player_location)
+    recompute_discovered_locations(engine.game_state, engine.world)
     player = engine.world.get_entity("Player")
     if player is not None:
         player.set_location(engine.game_state.player_location)
@@ -995,7 +1001,7 @@ def render_world_delta(reconciliation: dict[str, Any]) -> None:
         st.json(
             {
                 "story_status": story_status,
-                "discovered_keys": delta.get("discovered_keys") or {},
+                "discovered_locations": delta.get("discovered_locations") or {},
                 "quest_flag_changes": delta.get("quest_flag_changes") or [],
             },
             expanded=False,
@@ -1025,7 +1031,8 @@ def render_turn_inspector(display: DisplayOptions) -> None:
     )
     turn = turn_records[int(selected_turn)]
     llm_trace = dict(turn.get("llm_trace") or {})
-    agent_trace = dict(llm_trace.get("AGENT") or {})
+    phase_one_trace = dict(llm_trace.get("PHASE_ONE") or {})
+    phase_two_trace = dict(llm_trace.get("PHASE_TWO") or {})
     narrate_trace = dict(llm_trace.get("NARRATE") or {})
     reconciliation = dict(turn.get("reconciliation") or {})
 
@@ -1053,18 +1060,21 @@ def render_turn_inspector(display: DisplayOptions) -> None:
         if turn.get("turn_todo"):
             with st.expander("Turn Todo", expanded=False):
                 st.json(turn.get("turn_todo"), expanded=False)
-        if agent_trace.get("prompt"):
-            with st.expander("Agent Prompt", expanded=False):
-                st.code(str(agent_trace.get("prompt") or ""), language="markdown")
+        if phase_one_trace.get("prompt"):
+            with st.expander("Phase 1 Prompt", expanded=False):
+                st.code(str(phase_one_trace.get("prompt") or ""), language="markdown")
         if narrate_trace.get("prompt"):
             with st.expander("Narration Prompt", expanded=False):
                 st.code(str(narrate_trace.get("prompt") or ""), language="markdown")
+        if phase_two_trace.get("prompt"):
+            with st.expander("Phase 2 Prompt", expanded=False):
+                st.code(str(phase_two_trace.get("prompt") or ""), language="markdown")
 
     with messages_tab:
-        agent_messages, narrate_attempts = st.tabs(["Agent Loop", "Narration Step"])
-        with agent_messages:
-            render_trace_messages(list(agent_trace.get("messages") or []))
-        with narrate_attempts:
+        p1_messages_tab, narrate_attempts_tab, p2_messages_tab = st.tabs(["Phase 1", "Narration", "Phase 2"])
+        with p1_messages_tab:
+            render_trace_messages(list(phase_one_trace.get("messages") or []))
+        with narrate_attempts_tab:
             attempts = list(narrate_trace.get("attempts") or [])
             if not attempts:
                 st.info("No narration attempts were captured.")
@@ -1082,9 +1092,15 @@ def render_turn_inspector(display: DisplayOptions) -> None:
                         st.json(attempt.get("sections"), expanded=False)
                     if attempt.get("error"):
                         st.error(str(attempt.get("error")))
+        with p2_messages_tab:
+            render_trace_messages(list(phase_two_trace.get("messages") or []))
 
     with rounds_tab:
-        render_agent_rounds(list(agent_trace.get("rounds") or []))
+        p1_rounds_tab, p2_rounds_tab = st.tabs(["Phase 1 Rounds", "Phase 2 Rounds"])
+        with p1_rounds_tab:
+            render_agent_rounds(list(phase_one_trace.get("rounds") or []))
+        with p2_rounds_tab:
+            render_agent_rounds(list(phase_two_trace.get("rounds") or []))
 
     with world_tab:
         render_world_delta(reconciliation)
@@ -1257,8 +1273,8 @@ def render_data_characteristics(engine: StoryEngine) -> None:
         },
         {
             "domain": "runtime",
-            "records": len(engine.game_state.discovered_keys),
-            "fields": "player_location, discovered_keys, quest_flags, story_status, summary, current beat",
+            "records": len(engine.game_state.visited_locations) + len(engine.game_state.discovered_locations),
+            "fields": "player_location, visited_locations, discovered_locations, quest_flags, story_status, summary, current beat",
             "authorable_now": "yes, live session only",
             "should_add": "named milestones, journal entries, authored flag definitions",
         },
@@ -1394,10 +1410,10 @@ def render_runtime_editor(engine: StoryEngine) -> None:
             help="One summary event per line.",
         )
         discovered_keys_text = st.text_area(
-            "Discovered keys",
-            value=format_lines(sorted(engine.game_state.discovered_keys)),
+            "Visited locations",
+            value=format_lines(sorted(engine.game_state.visited_locations)),
             height=140,
-            help="One key per line.",
+            help="One location key per line. Discovered neighbors are recomputed automatically.",
         )
         quest_flags_text = st.text_area(
             "Quest flags (JSON)",
@@ -1425,10 +1441,13 @@ def render_runtime_editor(engine: StoryEngine) -> None:
         st.error(str(exc))
         return
 
-    discovered_keys = set(parse_token_list(discovered_keys_text))
-    discovered_keys.add(player_location)
-    engine.game_state.discovered_keys.clear()
-    engine.game_state.discovered_keys.update(discovered_keys)
+    from orchestrator.world_state.story import recompute_discovered_locations
+
+    visited_keys = set(parse_token_list(discovered_keys_text))
+    visited_keys.add(player_location)
+    engine.game_state.visited_locations.clear()
+    engine.game_state.visited_locations.update(visited_keys)
+    recompute_discovered_locations(engine.game_state, engine.world)
     sync_player_location(engine, player_location)
     engine.story_status = story_status.strip()
     engine.summary.events = parse_text_lines(session_summary)
