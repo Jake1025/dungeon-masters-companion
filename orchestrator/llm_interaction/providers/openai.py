@@ -61,7 +61,10 @@ class OpenAIProvider:
             "messages": native_messages,
         }
         # Map common options
-        if "temperature" in opts:
+        if "temperature" in opts and _supports_custom_temperature(model):
+            # Newer models (GPT-5.x, o-series) only accept the default
+            # temperature of 1 and reject any explicit value, so omit it
+            # for them rather than passing the pipeline's setting through.
             kwargs["temperature"] = opts["temperature"]
         if "max_tokens" in opts:
             if _uses_max_completion_tokens(model):
@@ -157,12 +160,14 @@ def _parse_response(response: Any) -> LLMResponse:
     return LLMResponse(text=text, tool_calls=tool_calls)
 
 
-def _uses_max_completion_tokens(model: str) -> bool:
+def _is_newer_model_family(model: str) -> bool:
     """
-    Newer OpenAI models (GPT-5.x family, o-series reasoning models) replaced
-    `max_tokens` with `max_completion_tokens` and reject the older name.
-    Older models (gpt-4o, gpt-4, gpt-3.5) still accept `max_tokens` and reject
-    the newer one.
+    Identify the newer OpenAI model family: the GPT-5.x models and the o-series
+    reasoning models (o1, o3, o4, ...). These differ from the older GPT-4 line
+    in two ways that this adapter must account for:
+      1. They replaced `max_tokens` with `max_completion_tokens`.
+      2. They only accept the default temperature (1) and reject any other value.
+    Older models (gpt-4o, gpt-4, gpt-3.5) are the opposite on both counts.
     """
     name = (model or "").strip().lower()
     if name.startswith("gpt-5"):
@@ -171,5 +176,18 @@ def _uses_max_completion_tokens(model: str) -> bool:
     if len(name) >= 2 and name[0] == "o" and name[1].isdigit():
         return True
     return False
+
+
+def _uses_max_completion_tokens(model: str) -> bool:
+    """Newer models replaced `max_tokens` with `max_completion_tokens`."""
+    return _is_newer_model_family(model)
+
+
+def _supports_custom_temperature(model: str) -> bool:
+    """
+    Newer models (GPT-5.x, o-series) only allow the default temperature of 1
+    and reject any explicit value. Older models accept a custom temperature.
+    """
+    return not _is_newer_model_family(model)
 
 __all__ = ["OpenAIProvider"]

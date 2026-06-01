@@ -367,10 +367,376 @@ def _render_state_changes(breakdown: Dict[str, Any]) -> str:
     )
 
 
+# ============================================================
+# Multi-run (averaged) case rendering
+# ============================================================
+
+def _run_score_chips(score_values: List[float]) -> str:
+    chips = ""
+    for i, s in enumerate(score_values, 1):
+        chips += (
+            f'<span title="run {i}" style="display:inline-block;padding:2px 8px;margin:2px;'
+            f'border-radius:3px;font-size:0.78em;color:#fff;background:{_score_color(s)};">'
+            f'{s:.2f}</span>'
+        )
+    return chips
+
+
+def _aggregate_panel(r: Dict[str, Any]) -> str:
+    """Top panel shown for a case that was run more than once."""
+    n = int(r.get("n_runs", 1))
+    score_values = r.get("score_values", [])
+    mean_score = r.get("score", 0)
+    smin = r.get("score_min", min(score_values) if score_values else 0)
+    smax = r.get("score_max", max(score_values) if score_values else 0)
+    sstd = r.get("score_stdev", 0)
+    pass_rate = r.get("pass_rate", 0)
+
+    stat_row = (
+        '<div style="display:flex;gap:24px;flex-wrap:wrap;align-items:flex-end;margin-bottom:10px;">'
+        f'<div><div style="font-size:0.72em;color:#78909c;text-transform:uppercase;margin-bottom:2px;">'
+        f'Mean over {n} runs</div>{_pct_bar(mean_score)}</div>'
+        '<div><div style="font-size:0.72em;color:#78909c;text-transform:uppercase;">Pass rate</div>'
+        f'<div style="font-weight:700;color:#37474f;">{pass_rate:.2f}</div></div>'
+        '<div><div style="font-size:0.72em;color:#78909c;text-transform:uppercase;">Min / Max</div>'
+        f'<div style="font-weight:700;color:#37474f;">{smin:.2f} / {smax:.2f}</div></div>'
+        '<div><div style="font-size:0.72em;color:#78909c;text-transform:uppercase;">Std dev</div>'
+        f'<div style="font-weight:700;color:#37474f;">{sstd:.3f}</div></div>'
+        '</div>'
+    )
+
+    extras: List[str] = []
+    if "iterations" in r:
+        extras.append(f'avg iterations {float(r.get("iterations", 0)):.2f}')
+    if "attempts" in r:
+        extras.append(f'avg attempts {float(r.get("attempts", 0)):.2f}')
+    if "tool_call_efficiency" in r:
+        extras.append(f'avg tool-call efficiency {float(r.get("tool_call_efficiency", 0)):.3f}')
+    if "stop_block_total" in r or "stop_block_count" in r:
+        total = r.get("stop_block_total", r.get("stop_block_count", 0))
+        extras.append(f'stop-hook blocks over all runs: {total}')
+    extras_html = (
+        f'<div style="font-size:0.82em;color:#546e7a;margin-bottom:10px;">{" | ".join(extras)}</div>'
+        if extras else ""
+    )
+
+    chips_html = (
+        '<div style="font-size:0.72em;color:#78909c;text-transform:uppercase;margin-bottom:4px;">'
+        'Per-run scores</div>'
+        f'<div>{_run_score_chips(score_values)}</div>'
+    )
+
+    return (
+        '<div style="margin-bottom:12px;padding:12px 14px;background:#eceff1;border-radius:6px;">'
+        + stat_row + extras_html + chips_html +
+        '</div>'
+    )
+
+
+def _render_case(
+    r: Dict[str, Any],
+    body_fn: Callable[[Dict[str, Any]], str],
+    title_fn: Callable[[Dict[str, Any]], str],
+    run_label: str = "run",
+) -> str:
+    """
+    Render one case dropdown. For a single-run result this is the existing
+    behaviour. For a multi-run (averaged) result it shows an aggregate panel
+    followed by one nested dropdown per individual run.
+    """
+    score = r.get("score", 0)
+    case_id = r.get("case_id", "")
+    n = int(r.get("n_runs", 1))
+    runs = r.get("runs") or []
+    if n > 1 and runs:
+        inner = _aggregate_panel(r)
+        inner += (
+            '<div style="font-size:0.8em;font-weight:600;color:#546e7a;margin:10px 0 6px 0;">'
+            f'Individual runs ({n})</div>'
+        )
+        for i, run in enumerate(runs, 1):
+            inner += _case_dropdown(
+                f'{case_id} - {run_label} {i}/{n}',
+                run.get("score", 0),
+                title_fn(run),
+                body_fn(run),
+            )
+        return _case_dropdown(case_id, score, title_fn(r), inner)
+    return _case_dropdown(case_id, score, title_fn(r), body_fn(r))
+
+
+def _phase_one_title(r: Dict[str, Any]) -> str:
+    corrections = r.get("correction_count", 0)
+    corrections_str = f", corrections={corrections}" if corrections else ""
+    return (
+        f'{_esc(r.get("description", ""))} | '
+        f'Iterations: {r.get("iterations", 0)} | '
+        f'Time: {r.get("elapsed_s", 0):.2f}s{corrections_str}'
+    )
+
+
+def _phase_one_body(r: Dict[str, Any]) -> str:
+    corrections = r.get("correction_count", 0)
+    rows = _comparison_row(
+        "finalize_turn called",
+        "yes" if r.get("finalize_ok") and r.get("finalize_called") else "no",
+        "yes" if r.get("finalize_called") else "no",
+        r.get("finalize_ok", False),
+    )
+    rows += _comparison_row(
+        "blocked_reason set",
+        "yes" if r.get("expect_blocked") else "no",
+        "yes" if r.get("blocked") else "no",
+        r.get("blocked_ok", False),
+    )
+    rows += _comparison_row(
+        "expected tools",
+        ", ".join(r.get("expected_tools", [])) or "(no constraint)",
+        ", ".join(r.get("actual_tools", [])) or "(none)",
+        r.get("expected_tools_ok", False),
+    )
+    fc = r.get("function_calls") or {}
+    rows += _comparison_row(
+        "unexpected tools",
+        "none called",
+        ", ".join(fc.get("unexpected_called", [])) or "none called",
+        r.get("no_unexpected_tools", True),
+    )
+    rows += _comparison_row(
+        "stop-hook blocks",
+        "0",
+        str(r.get("stop_block_count", 0)),
+        r.get("no_stop_blocks", True),
+    )
+    rows += _comparison_row(
+        "tool-call efficiency",
+        f"{r.get('necessary_tool_calls', 0)} necessary",
+        f"{r.get('tool_call_count', 0)} made ({r.get('tool_call_efficiency', 1.0):.2f})",
+        r.get("tool_call_efficiency", 1.0) >= 1.0,
+    )
+    if r.get("expected_summary_keywords"):
+        kw_label = " AND ".join("[" + " | ".join(g) + "]" for g in r["expected_summary_keywords"])
+        rows += _comparison_row(
+            "turn_summary keywords",
+            kw_label,
+            "match" if r.get("summary_keywords_ok") else "no match",
+            r.get("summary_keywords_ok", False),
+        )
+    if r.get("expected_focus_keywords"):
+        kw_label = " AND ".join("[" + " | ".join(g) + "]" for g in r["expected_focus_keywords"])
+        rows += _comparison_row(
+            "narration_focus keywords",
+            kw_label,
+            "match" if r.get("focus_keywords_ok") else "no match",
+            r.get("focus_keywords_ok", False),
+        )
+    if r.get("expected_max_iterations", 0) > 0:
+        rows += _comparison_row(
+            "iterations limit",
+            f"<= {r['expected_max_iterations']}",
+            str(r.get("iterations", 0)),
+            r.get("iterations_ok", False),
+        )
+
+    finalize_html = (
+        '<div style="margin-top:10px;padding:10px 12px;background:#f5f5f5;border-radius:4px;font-size:0.85em;">'
+        '<div style="font-weight:600;font-size:0.85em;color:#546e7a;margin-bottom:4px;">finalize_turn payload</div>'
+        f'<div><strong>turn_summary:</strong> {_esc(r.get("turn_summary", ""))}</div>'
+        f'<div><strong>narration_focus:</strong> {_esc(r.get("narration_focus", ""))}</div>'
+        f'<div><strong>blocked_reason:</strong> {_esc(r.get("blocked_reason", "")) or "(empty)"}</div>'
+        '</div>'
+    )
+
+    return (
+        f'<div style="font-size:0.85em;color:#546e7a;margin-bottom:8px;">'
+        f'Iterations: {r.get("iterations", 0)} | Corrections: {corrections} | '
+        f'Time: {r.get("elapsed_s", 0):.2f}s | Loop status: {_esc(r.get("loop_status", ""))}</div>'
+        + _player_input_line(r.get("player_input", ""))
+        + _comparison_table(rows)
+        + _render_function_calls(r.get("function_calls") or {})
+        + finalize_html
+        + _render_tool_trace(r.get("tool_trace", []), "Phase 1 Tool Trace")
+        + _render_corrections(r.get("corrections", []))
+        + _error_block(r.get("error", ""))
+        + _raw_block("Raw Final LLM Output", r.get("raw_final", ""))
+        + _render_earlier_rounds(r.get("all_rounds", []))
+    )
+
+
+def _narration_title(r: Dict[str, Any]) -> str:
+    return (
+        f'{_esc(r.get("description", ""))} | '
+        f'Attempts: {r.get("attempts", 1)} | '
+        f'Time: {r.get("elapsed_s", 0):.2f}s | Words: {r.get("word_count", 0)}'
+    )
+
+
+def _narration_body(r: Dict[str, Any]) -> str:
+    attempts = r.get("attempts", 1)
+    elapsed = r.get("elapsed_s", 0)
+    word_count = r.get("word_count", 0)
+
+    rows = ""
+    for check_name, passed in r.get("checks", {}).items():
+        rows += _comparison_row(check_name, "pass", "pass" if passed else "fail", passed)
+    for pattern, hit in r.get("forbidden_hits", {}).items():
+        rows += _comparison_row(f'forbidden: {pattern}', "not present", "FOUND" if hit else "not present", not hit)
+
+    narrative = r.get("narrative_full", "")
+    narrative_html = (
+        '<div style="margin-top:10px;">'
+        '<div style="font-weight:600;font-size:0.8em;color:#546e7a;margin-bottom:4px;">Generated Narrative</div>'
+        '<div style="padding:12px;background:#f5f5f5;border-radius:4px;font-size:0.85em;'
+        'font-style:italic;color:#37474f;max-height:300px;overflow-y:auto;">'
+        f'{_esc(narrative)}</div></div>'
+    ) if narrative else ""
+
+    raw_output = r.get("raw_output", "")
+    last_attempt_html = _raw_block("Raw LLM Output (last attempt)", raw_output)
+
+    all_raws = r.get("all_attempt_raws", [])
+    earlier_attempts_html = ""
+    if len(all_raws) > 1:
+        earlier_blocks = ""
+        for i, raw in enumerate(all_raws[:-1], start=1):
+            earlier_blocks += (
+                '<div style="margin-bottom:8px;">'
+                f'<div style="font-weight:600;font-size:0.8em;color:#e65100;margin-bottom:4px;">'
+                f'Attempt {i} (failed validation)</div>'
+                + _raw_block(f"Raw Output - Attempt {i}", raw)
+                + '</div>'
+            )
+        earlier_attempts_html = (
+            '<details style="margin-top:8px;">'
+            f'<summary style="cursor:pointer;font-size:0.85em;color:#546e7a;padding:6px 0;">'
+            f'Show {len(all_raws) - 1} earlier attempt(s)</summary>'
+            f'<div style="margin-top:8px;">{earlier_blocks}</div>'
+            '</details>'
+        )
+
+    return (
+        f'<div style="font-size:0.85em;color:#546e7a;margin-bottom:8px;">'
+        f'Attempts: {attempts} | Time: {elapsed:.2f}s | Words: {word_count}</div>'
+        + _player_input_line(r.get("player_input", ""))
+        + _comparison_table(rows)
+        + narrative_html
+        + _error_block(r.get("error", ""))
+        + last_attempt_html
+        + earlier_attempts_html
+    )
+
+
+def _phase_two_title(r: Dict[str, Any]) -> str:
+    corrections = r.get("correction_count", 0)
+    corrections_str = f", corrections={corrections}" if corrections else ""
+    return (
+        f'{_esc(r.get("description", ""))} | '
+        f'Iterations: {r.get("iterations", 0)} | '
+        f'Time: {r.get("elapsed_s", 0):.2f}s | '
+        f'Loc: {_esc(r.get("actual_location", "?"))}{corrections_str}'
+    )
+
+
+def _phase_two_body(r: Dict[str, Any]) -> str:
+    corrections = r.get("correction_count", 0)
+    rows = _comparison_row(
+        "finalize_writes called",
+        "yes" if r.get("finalize_writes_ok") and r.get("finalize_writes_called") else "no",
+        "yes" if r.get("finalize_writes_called") else "no",
+        r.get("finalize_writes_ok", False),
+    )
+    rows += _comparison_row(
+        "expected tools",
+        ", ".join(r.get("expected_tools", [])) or "(no constraint)",
+        ", ".join(r.get("actual_tools", [])) or "(none)",
+        r.get("expected_tools_ok", False),
+    )
+    fc2 = r.get("function_calls") or {}
+    rows += _comparison_row(
+        "unexpected tools",
+        "none called",
+        ", ".join(fc2.get("unexpected_called", [])) or "none called",
+        r.get("no_unexpected_tools", True),
+    )
+    rows += _comparison_row(
+        "stop-hook blocks",
+        "0",
+        str(r.get("stop_block_count", 0)),
+        r.get("no_stop_blocks", True),
+    )
+    rows += _comparison_row(
+        "tool-call efficiency",
+        f"{r.get('necessary_tool_calls', 0)} necessary",
+        f"{r.get('tool_call_count', 0)} made ({r.get('tool_call_efficiency', 1.0):.2f})",
+        r.get("tool_call_efficiency", 1.0) >= 1.0,
+    )
+    if r.get("expected_location"):
+        rows += _comparison_row(
+            "player location after",
+            r.get("expected_location", ""),
+            r.get("actual_location", ""),
+            r.get("location_ok", False),
+        )
+    sc = r.get("state_changes") or {}
+    sc_tp = int(sc.get("tp", 0))
+    sc_fn = int(sc.get("fn", 0))
+    sc_fp = int(sc.get("fp", 0))
+    rows += _comparison_row(
+        "expected state changes",
+        f"{sc_tp + sc_fn} expected",
+        f"{sc_tp} observed, {sc_fn} missing",
+        r.get("state_changes_ok", True),
+    )
+    rows += _comparison_row(
+        "unexpected state changes",
+        "none",
+        f"{sc_fp} unexpected" if sc_fp else "none",
+        r.get("no_unexpected_state_changes", True),
+    )
+    if r.get("expected_summary_keywords"):
+        kw_label = " AND ".join("[" + " | ".join(g) + "]" for g in r["expected_summary_keywords"])
+        rows += _comparison_row(
+            "writes_summary keywords",
+            kw_label,
+            "match" if r.get("summary_keywords_ok") else "no match",
+            r.get("summary_keywords_ok", False),
+        )
+    if r.get("expected_max_iterations", 0) > 0:
+        rows += _comparison_row(
+            "iterations limit",
+            f"<= {r['expected_max_iterations']}",
+            str(r.get("iterations", 0)),
+            r.get("iterations_ok", False),
+        )
+
+    writes_html = (
+        '<div style="margin-top:10px;padding:10px 12px;background:#f5f5f5;border-radius:4px;font-size:0.85em;">'
+        '<div style="font-weight:600;font-size:0.85em;color:#546e7a;margin-bottom:4px;">finalize_writes payload</div>'
+        f'<div><strong>writes_summary:</strong> {_esc(r.get("writes_summary", ""))}</div>'
+        '</div>'
+    )
+
+    return (
+        f'<div style="font-size:0.85em;color:#546e7a;margin-bottom:8px;">'
+        f'Iterations: {r.get("iterations", 0)} | Corrections: {corrections} | '
+        f'Time: {r.get("elapsed_s", 0):.2f}s | Loop status: {_esc(r.get("loop_status", ""))}</div>'
+        + _player_input_line(r.get("player_input", ""))
+        + _comparison_table(rows)
+        + _render_function_calls(r.get("function_calls") or {})
+        + _render_state_changes(r.get("state_changes") or {})
+        + writes_html
+        + _render_tool_trace(r.get("tool_trace", []), "Phase 2 Tool Trace")
+        + _render_corrections(r.get("corrections", []))
+        + _error_block(r.get("error", ""))
+        + _raw_block("Raw Final LLM Output", r.get("raw_final", ""))
+        + _render_earlier_rounds(r.get("all_rounds", []))
+    )
+
+
 def _render_phase_one_results(results: List[Dict[str, Any]]) -> str:
     if not results:
         return ""
-    avg_iters = sum(r.get("iterations", 0) for r in results) / len(results)
+    avg_iters = sum(float(r.get("iterations", 0)) for r in results) / len(results)
     avg_bar = (
         '<div style="margin-bottom:16px;padding:10px 16px;background:#eceff1;border-radius:6px;'
         'font-size:0.88em;color:#37474f;">'
@@ -378,96 +744,14 @@ def _render_phase_one_results(results: List[Dict[str, Any]]) -> str:
     )
     parts = [avg_bar]
     for r in results:
-        score = r.get("score", 0)
-        corrections = r.get("correction_count", 0)
-        corrections_str = f", corrections={corrections}" if corrections else ""
-        title_extra = (
-            f'{_esc(r.get("description", ""))} | '
-            f'Iterations: {r.get("iterations", 0)} | '
-            f'Time: {r.get("elapsed_s", 0):.2f}s{corrections_str}'
-        )
-
-        rows = _comparison_row(
-            "finalize_turn called",
-            "yes" if r.get("finalize_ok") and r.get("finalize_called") else "no",
-            "yes" if r.get("finalize_called") else "no",
-            r.get("finalize_ok", False),
-        )
-        rows += _comparison_row(
-            "blocked_reason set",
-            "yes" if r.get("blocked_ok") and r.get("blocked") else "no",
-            "yes" if r.get("blocked") else "no",
-            r.get("blocked_ok", False),
-        )
-        rows += _comparison_row(
-            "expected tools",
-            ", ".join(r.get("expected_tools", [])) or "(no constraint)",
-            ", ".join(r.get("actual_tools", [])) or "(none)",
-            r.get("expected_tools_ok", False),
-        )
-        fc = r.get("function_calls") or {}
-        rows += _comparison_row(
-            "unexpected tools",
-            "none called",
-            ", ".join(fc.get("unexpected_called", [])) or "none called",
-            r.get("no_unexpected_tools", True),
-        )
-        if r.get("expected_summary_keywords"):
-            kw_label = " AND ".join("[" + " | ".join(g) + "]" for g in r["expected_summary_keywords"])
-            rows += _comparison_row(
-                "turn_summary keywords",
-                kw_label,
-                "match" if r.get("summary_keywords_ok") else "no match",
-                r.get("summary_keywords_ok", False),
-            )
-        if r.get("expected_focus_keywords"):
-            kw_label = " AND ".join("[" + " | ".join(g) + "]" for g in r["expected_focus_keywords"])
-            rows += _comparison_row(
-                "narration_focus keywords",
-                kw_label,
-                "match" if r.get("focus_keywords_ok") else "no match",
-                r.get("focus_keywords_ok", False),
-            )
-        if r.get("expected_max_iterations", 0) > 0:
-            rows += _comparison_row(
-                "iterations limit",
-                f"<= {r['expected_max_iterations']}",
-                str(r.get("iterations", 0)),
-                r.get("iterations_ok", False),
-            )
-
-        # Phase 1 outputs panel
-        finalize_html = (
-            '<div style="margin-top:10px;padding:10px 12px;background:#f5f5f5;border-radius:4px;font-size:0.85em;">'
-            '<div style="font-weight:600;font-size:0.85em;color:#546e7a;margin-bottom:4px;">finalize_turn payload</div>'
-            f'<div><strong>turn_summary:</strong> {_esc(r.get("turn_summary", ""))}</div>'
-            f'<div><strong>narration_focus:</strong> {_esc(r.get("narration_focus", ""))}</div>'
-            f'<div><strong>blocked_reason:</strong> {_esc(r.get("blocked_reason", "")) or "(empty)"}</div>'
-            '</div>'
-        )
-
-        body = (
-            f'<div style="font-size:0.85em;color:#546e7a;margin-bottom:8px;">'
-            f'Iterations: {r.get("iterations", 0)} | Corrections: {corrections} | '
-            f'Time: {r.get("elapsed_s", 0):.2f}s | Loop status: {_esc(r.get("loop_status", ""))}</div>'
-            + _player_input_line(r.get("player_input", ""))
-            + _comparison_table(rows)
-            + _render_function_calls(r.get("function_calls") or {})
-            + finalize_html
-            + _render_tool_trace(r.get("tool_trace", []), "Phase 1 Tool Trace")
-            + _render_corrections(r.get("corrections", []))
-            + _error_block(r.get("error", ""))
-            + _raw_block("Raw Final LLM Output", r.get("raw_final", ""))
-            + _render_earlier_rounds(r.get("all_rounds", []))
-        )
-        parts.append(_case_dropdown(r.get("case_id", ""), score, title_extra, body))
+        parts.append(_render_case(r, _phase_one_body, _phase_one_title))
     return "\n".join(parts)
 
 
 def _render_narration_results(results: List[Dict[str, Any]]) -> str:
     if not results:
         return ""
-    avg_attempts = sum(r.get("attempts", 1) for r in results) / len(results)
+    avg_attempts = sum(float(r.get("attempts", 1)) for r in results) / len(results)
     avg_bar = (
         '<div style="margin-bottom:16px;padding:10px 16px;background:#eceff1;border-radius:6px;'
         'font-size:0.88em;color:#37474f;">'
@@ -475,71 +759,14 @@ def _render_narration_results(results: List[Dict[str, Any]]) -> str:
     )
     parts = [avg_bar]
     for r in results:
-        score = r.get("score", 0)
-        attempts = r.get("attempts", 1)
-        elapsed = r.get("elapsed_s", 0)
-        word_count = r.get("word_count", 0)
-        title_extra = (
-            f'{_esc(r.get("description", ""))} | '
-            f'Attempts: {attempts} | Time: {elapsed:.2f}s | Words: {word_count}'
-        )
-
-        rows = ""
-        for check_name, passed in r.get("checks", {}).items():
-            rows += _comparison_row(check_name, "pass", "pass" if passed else "fail", passed)
-        for pattern, hit in r.get("forbidden_hits", {}).items():
-            rows += _comparison_row(f'forbidden: {pattern}', "not present", "FOUND" if hit else "not present", not hit)
-
-        narrative = r.get("narrative_full", "")
-        narrative_html = (
-            '<div style="margin-top:10px;">'
-            '<div style="font-weight:600;font-size:0.8em;color:#546e7a;margin-bottom:4px;">Generated Narrative</div>'
-            '<div style="padding:12px;background:#f5f5f5;border-radius:4px;font-size:0.85em;'
-            'font-style:italic;color:#37474f;max-height:300px;overflow-y:auto;">'
-            f'{_esc(narrative)}</div></div>'
-        ) if narrative else ""
-
-        raw_output = r.get("raw_output", "")
-        last_attempt_html = _raw_block("Raw LLM Output (last attempt)", raw_output)
-
-        all_raws = r.get("all_attempt_raws", [])
-        earlier_attempts_html = ""
-        if len(all_raws) > 1:
-            earlier_blocks = ""
-            for i, raw in enumerate(all_raws[:-1], start=1):
-                earlier_blocks += (
-                    '<div style="margin-bottom:8px;">'
-                    f'<div style="font-weight:600;font-size:0.8em;color:#e65100;margin-bottom:4px;">'
-                    f'Attempt {i} (failed validation)</div>'
-                    + _raw_block(f"Raw Output - Attempt {i}", raw)
-                    + '</div>'
-                )
-            earlier_attempts_html = (
-                '<details style="margin-top:8px;">'
-                f'<summary style="cursor:pointer;font-size:0.85em;color:#546e7a;padding:6px 0;">'
-                f'Show {len(all_raws) - 1} earlier attempt(s)</summary>'
-                f'<div style="margin-top:8px;">{earlier_blocks}</div>'
-                '</details>'
-            )
-
-        body = (
-            f'<div style="font-size:0.85em;color:#546e7a;margin-bottom:8px;">'
-            f'Attempts: {attempts} | Time: {elapsed:.2f}s | Words: {word_count}</div>'
-            + _player_input_line(r.get("player_input", ""))
-            + _comparison_table(rows)
-            + narrative_html
-            + _error_block(r.get("error", ""))
-            + last_attempt_html
-            + earlier_attempts_html
-        )
-        parts.append(_case_dropdown(r.get("case_id", ""), score, title_extra, body))
+        parts.append(_render_case(r, _narration_body, _narration_title))
     return "\n".join(parts)
 
 
 def _render_phase_two_results(results: List[Dict[str, Any]]) -> str:
     if not results:
         return ""
-    avg_iters = sum(r.get("iterations", 0) for r in results) / len(results)
+    avg_iters = sum(float(r.get("iterations", 0)) for r in results) / len(results)
     avg_bar = (
         '<div style="margin-bottom:16px;padding:10px 16px;background:#eceff1;border-radius:6px;'
         'font-size:0.88em;color:#37474f;">'
@@ -547,97 +774,7 @@ def _render_phase_two_results(results: List[Dict[str, Any]]) -> str:
     )
     parts = [avg_bar]
     for r in results:
-        score = r.get("score", 0)
-        corrections = r.get("correction_count", 0)
-        corrections_str = f", corrections={corrections}" if corrections else ""
-        title_extra = (
-            f'{_esc(r.get("description", ""))} | '
-            f'Iterations: {r.get("iterations", 0)} | '
-            f'Time: {r.get("elapsed_s", 0):.2f}s | '
-            f'Loc: {_esc(r.get("actual_location", "?"))}{corrections_str}'
-        )
-
-        rows = _comparison_row(
-            "finalize_writes called",
-            "yes" if r.get("finalize_writes_ok") and r.get("finalize_writes_called") else "no",
-            "yes" if r.get("finalize_writes_called") else "no",
-            r.get("finalize_writes_ok", False),
-        )
-        rows += _comparison_row(
-            "expected tools",
-            ", ".join(r.get("expected_tools", [])) or "(no constraint)",
-            ", ".join(r.get("actual_tools", [])) or "(none)",
-            r.get("expected_tools_ok", False),
-        )
-        fc2 = r.get("function_calls") or {}
-        rows += _comparison_row(
-            "unexpected tools",
-            "none called",
-            ", ".join(fc2.get("unexpected_called", [])) or "none called",
-            r.get("no_unexpected_tools", True),
-        )
-        if r.get("expected_location"):
-            rows += _comparison_row(
-                "player location after",
-                r.get("expected_location", ""),
-                r.get("actual_location", ""),
-                r.get("location_ok", False),
-            )
-        sc = r.get("state_changes") or {}
-        sc_tp = int(sc.get("tp", 0))
-        sc_fn = int(sc.get("fn", 0))
-        sc_fp = int(sc.get("fp", 0))
-        rows += _comparison_row(
-            "expected state changes",
-            f"{sc_tp + sc_fn} expected",
-            f"{sc_tp} observed, {sc_fn} missing",
-            r.get("state_changes_ok", True),
-        )
-        rows += _comparison_row(
-            "unexpected state changes",
-            "none",
-            f"{sc_fp} unexpected" if sc_fp else "none",
-            r.get("no_unexpected_state_changes", True),
-        )
-        if r.get("expected_summary_keywords"):
-            kw_label = " AND ".join("[" + " | ".join(g) + "]" for g in r["expected_summary_keywords"])
-            rows += _comparison_row(
-                "writes_summary keywords",
-                kw_label,
-                "match" if r.get("summary_keywords_ok") else "no match",
-                r.get("summary_keywords_ok", False),
-            )
-        if r.get("expected_max_iterations", 0) > 0:
-            rows += _comparison_row(
-                "iterations limit",
-                f"<= {r['expected_max_iterations']}",
-                str(r.get("iterations", 0)),
-                r.get("iterations_ok", False),
-            )
-
-        writes_html = (
-            '<div style="margin-top:10px;padding:10px 12px;background:#f5f5f5;border-radius:4px;font-size:0.85em;">'
-            '<div style="font-weight:600;font-size:0.85em;color:#546e7a;margin-bottom:4px;">finalize_writes payload</div>'
-            f'<div><strong>writes_summary:</strong> {_esc(r.get("writes_summary", ""))}</div>'
-            '</div>'
-        )
-
-        body = (
-            f'<div style="font-size:0.85em;color:#546e7a;margin-bottom:8px;">'
-            f'Iterations: {r.get("iterations", 0)} | Corrections: {corrections} | '
-            f'Time: {r.get("elapsed_s", 0):.2f}s | Loop status: {_esc(r.get("loop_status", ""))}</div>'
-            + _player_input_line(r.get("player_input", ""))
-            + _comparison_table(rows)
-            + _render_function_calls(r.get("function_calls") or {})
-            + _render_state_changes(r.get("state_changes") or {})
-            + writes_html
-            + _render_tool_trace(r.get("tool_trace", []), "Phase 2 Tool Trace")
-            + _render_corrections(r.get("corrections", []))
-            + _error_block(r.get("error", ""))
-            + _raw_block("Raw Final LLM Output", r.get("raw_final", ""))
-            + _render_earlier_rounds(r.get("all_rounds", []))
-        )
-        parts.append(_case_dropdown(r.get("case_id", ""), score, title_extra, body))
+        parts.append(_render_case(r, _phase_two_body, _phase_two_title))
     return "\n".join(parts)
 
 
@@ -652,6 +789,10 @@ def _render_summary_card(model: str, data: Dict[str, Any]) -> str:
     timestamp = data.get("timestamp", "")
     mean_attempts = overall.get("mean_attempts", 0)
     mean_iterations = overall.get("mean_iterations", 0)
+    mean_efficiency = overall.get("mean_tool_call_efficiency", 0)
+    total_stop_blocks = overall.get("total_stop_blocks", 0)
+    runs_per_case = int(data.get("runs_per_case", 1))
+    runs_note = f" - {runs_per_case} runs/case (averaged)" if runs_per_case > 1 else ""
 
     tests_data = data.get("tests", {})
     test_bars = []
@@ -662,10 +803,14 @@ def _render_summary_card(model: str, data: Dict[str, Any]) -> str:
         t_score = s.get("mean_score", 0)
         n = s.get("n", 0)
         pct = int(t_score * 100)
+        stdev_txt = ""
+        if runs_per_case > 1:
+            t_stdev = float(s.get("mean_case_score_stdev", 0.0) or 0.0)
+            stdev_txt = f' - std {t_stdev:.3f}'
         test_bars.append(
             f'<div style="margin-bottom:6px;">'
             f'<div style="display:flex;justify-content:space-between;font-size:0.85em;margin-bottom:2px;">'
-            f'<span>{_esc(test_name)}</span><span>{t_score:.3f} ({n} cases)</span></div>'
+            f'<span>{_esc(test_name)}</span><span>{t_score:.3f} ({n} cases){stdev_txt}</span></div>'
             f'<div style="background:#e0e0e0;border-radius:4px;height:14px;overflow:hidden;">'
             f'<div style="background:{_score_color(t_score)};width:{pct}%;height:100%;border-radius:4px;"></div>'
             '</div></div>'
@@ -682,7 +827,7 @@ def _render_summary_card(model: str, data: Dict[str, Any]) -> str:
         '<div style="background:#fff;border:1px solid #cfd8dc;border-radius:8px;padding:24px;margin-bottom:24px;">'
         '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;">'
         f'<h2 style="margin:0;color:#263238;">{_esc(model)}</h2>'
-        f'<span style="font-size:0.85em;color:#78909c;">{_esc(timestamp)}</span></div>'
+        f'<span style="font-size:0.85em;color:#78909c;">{_esc(timestamp)}{runs_note}</span></div>'
         '<div style="display:flex;gap:32px;margin-bottom:16px;flex-wrap:wrap;">'
         '<div><div style="font-size:0.8em;color:#78909c;text-transform:uppercase;">Overall</div>'
         f'<div style="font-size:2em;font-weight:700;color:{_score_color(score)};">{score:.3f}</div></div>'
@@ -692,28 +837,13 @@ def _render_summary_card(model: str, data: Dict[str, Any]) -> str:
         f'<div style="font-size:2em;font-weight:700;color:#37474f;">{mean_attempts:.2f}</div></div>'
         '<div><div style="font-size:0.8em;color:#78909c;text-transform:uppercase;">Avg Iterations</div>'
         f'<div style="font-size:2em;font-weight:700;color:#37474f;">{mean_iterations:.2f}</div></div>'
+        '<div><div style="font-size:0.8em;color:#78909c;text-transform:uppercase;">Tool-Call Efficiency</div>'
+        f'<div style="font-size:2em;font-weight:700;color:{_score_color(mean_efficiency)};">{mean_efficiency:.3f}</div></div>'
+        '<div><div style="font-size:0.8em;color:#78909c;text-transform:uppercase;">Stop-Hook Blocks</div>'
+        f'<div style="font-size:2em;font-weight:700;color:{"#2e7d32" if total_stop_blocks == 0 else "#c62828"};">{total_stop_blocks}</div></div>'
         '</div>'
         f'<div style="max-width:500px;">{"".join(test_bars)}</div>'
         f'{failed_html}</div>'
-    )
-
-
-def _render_tag_table(overall: Dict[str, Any]) -> str:
-    per_tag = overall.get("per_tag", {})
-    if not per_tag:
-        return ""
-    rows = []
-    for tag in sorted(per_tag.keys()):
-        ts = per_tag[tag]
-        rows.append(
-            '<tr>'
-            f'<td style="padding:4px 12px;">{_badge(tag, _score_color(ts))}</td>'
-            f'<td style="padding:4px 12px;font-weight:600;color:{_score_color(ts)};">{ts:.3f}</td>'
-            '</tr>'
-        )
-    return (
-        '<div style="margin-bottom:24px;"><h3 style="color:#263238;">Score by Tag</h3>'
-        '<table style="border-collapse:collapse;">' + "\n".join(rows) + '</table></div>'
     )
 
 
@@ -736,7 +866,7 @@ def _render_model_panel(model: str, data: Dict[str, Any]) -> str:
             f'<pre>{_esc(data["error"])}</pre></div>'
         )
 
-    sections = [_render_summary_card(model, data), _render_tag_table(data.get("overall", {}))]
+    sections = [_render_summary_card(model, data)]
     tests = data.get("tests", {})
     for test_name in ["phase_one", "narration", "phase_two"]:
         test_data = tests.get(test_name)
@@ -788,13 +918,15 @@ def _render_compare_panel(all_data: Dict[str, Dict[str, Any]]) -> str:
         score = overall.get("mean_score", 0)
         elapsed = d.get("total_elapsed_s", 0)
         n = overall.get("n", 0)
+        runs_pc = int(d.get("runs_per_case", 1))
+        runs_txt = f", {runs_pc} runs/case" if runs_pc > 1 else ""
         medal = {1: "1st", 2: "2nd", 3: "3rd"}.get(rank, f"#{rank}")
         leaderboard_rows += (
             f'<tr style="background:{_score_bg(score)};">'
             f'<td style="padding:8px 16px;font-size:1.1em;">{medal}</td>'
             f'<td style="padding:8px 16px;font-weight:700;">{_esc(model)}</td>'
             f'<td style="padding:8px 16px;">{_pct_bar(score, 220)}</td>'
-            f'<td style="padding:8px 16px;color:#546e7a;">{elapsed:.1f}s total, {n} cases</td>'
+            f'<td style="padding:8px 16px;color:#546e7a;">{elapsed:.1f}s total, {n} cases{runs_txt}</td>'
             '</tr>'
         )
     leaderboard_html = (
@@ -827,58 +959,44 @@ def _render_compare_panel(all_data: Dict[str, Dict[str, Any]]) -> str:
         + model_headers + '</tr>' + test_section_rows + '</table></div>'
     )
 
-    # Tag comparison
-    all_tags: set = set()
-    for model in models:
-        all_tags.update(all_data[model].get("overall", {}).get("per_tag", {}).keys())
-    tag_rows = ""
-    for tag in sorted(all_tags):
-        tag_cells = f'<td style="padding:5px 12px;">{_badge(tag)}</td>'
-        for model in ranked:
-            tag_score = all_data[model].get("overall", {}).get("per_tag", {}).get(tag)
-            if tag_score is None:
-                tag_cells += '<td style="padding:5px 12px;color:#9e9e9e;">n/a</td>'
-            else:
-                tag_cells += f'<td style="padding:5px 12px;font-weight:600;color:{_score_color(tag_score)};">{tag_score:.3f}</td>'
-        tag_rows += f'<tr>{tag_cells}</tr>'
-    tag_compare_html = ""
-    if tag_rows:
-        tag_model_headers = "".join(
-            f'<th style="padding:5px 12px;text-align:left;color:{mc(i)};">{_esc(m)}</th>'
-            for i, m in enumerate(ranked)
-        )
-        tag_compare_html = (
-            '<div style="margin-bottom:32px;">'
-            '<h3 style="color:#263238;border-bottom:2px solid #cfd8dc;padding-bottom:8px;">Score by Tag</h3>'
-            '<table style="border-collapse:collapse;font-size:0.88em;">'
-            '<tr style="background:#eceff1;"><th style="padding:5px 12px;text-align:left;">Tag</th>'
-            + tag_model_headers + '</tr>' + tag_rows + '</table></div>'
-        )
-
     # Case-by-case
-    case_scores: Dict[str, Dict[str, Optional[float]]] = {}
+    case_scores: Dict[str, Dict[str, Optional[Dict[str, Any]]]] = {}
     for model in models:
         for test_key in _TEST_NAMES:
             for r in all_data[model].get("tests", {}).get(test_key, {}).get("results", []):
                 cid = r.get("case_id", "?")
                 if cid not in case_scores:
                     case_scores[cid] = {m: None for m in ranked}
-                case_scores[cid][model] = r.get("score")
+                case_scores[cid][model] = {
+                    "score": r.get("score"),
+                    "stdev": float(r.get("score_stdev", 0.0) or 0.0),
+                    "n_runs": int(r.get("n_runs", 1)),
+                }
+    any_multi_run = any(
+        all_data[m].get("overall", {}).get("is_multi_run") for m in models
+    )
     case_rows = ""
     for cid in sorted(case_scores.keys()):
         scores_for_case = case_scores[cid]
         cells = f'<td style="padding:4px 10px;font-weight:600;font-size:0.88em;">{_esc(cid)}</td>'
         for model in ranked:
-            s = scores_for_case.get(model)
+            cell = scores_for_case.get(model)
+            s = cell.get("score") if cell else None
             if s is None:
                 cells += '<td style="padding:4px 10px;text-align:center;color:#9e9e9e;">n/a</td>'
             else:
                 bg = _score_bg(s)
                 fc = _score_color(s)
                 mark = "pass" if s >= 1.0 else ("partial" if s >= 0.5 else "fail")
+                spread = ""
+                if cell and cell.get("n_runs", 1) > 1:
+                    spread = (
+                        f'<div style="font-size:0.78em;font-weight:400;color:#546e7a;">'
+                        f'+/-{cell.get("stdev", 0.0):.2f} (n={cell.get("n_runs", 1)})</div>'
+                    )
                 cells += (
                     f'<td style="padding:4px 10px;text-align:center;background:{bg};'
-                    f'font-weight:700;color:{fc};">{s:.2f} {mark}</td>'
+                    f'font-weight:700;color:{fc};">{s:.2f} {mark}{spread}</td>'
                 )
         case_rows += f'<tr>{cells}</tr>'
     case_model_headers = "".join(
@@ -888,7 +1006,12 @@ def _render_compare_panel(all_data: Dict[str, Dict[str, Any]]) -> str:
     case_compare_html = (
         '<div style="margin-bottom:32px;">'
         '<h3 style="color:#263238;border-bottom:2px solid #cfd8dc;padding-bottom:8px;">Case-by-Case Breakdown</h3>'
-        '<p style="font-size:0.85em;color:#546e7a;margin-top:-4px;">pass = perfect; partial = partial credit; fail = failed</p>'
+        '<p style="font-size:0.85em;color:#546e7a;margin-top:-4px;">pass = perfect; partial = partial credit; fail = failed'
+        + (
+            '. Values are mean scores over repeated runs; +/- is the run-to-run standard deviation.'
+            if any_multi_run else ''
+        )
+        + '</p>'
         '<div style="overflow-x:auto;">'
         '<table style="border-collapse:collapse;font-size:0.85em;min-width:100%;">'
         '<tr style="background:#eceff1;"><th style="padding:4px 10px;text-align:left;">Case</th>'
@@ -903,6 +1026,11 @@ def _render_compare_panel(all_data: Dict[str, Dict[str, Any]]) -> str:
         ("Avg Time/Case (s)",  lambda d: d.get("overall", {}).get("mean_elapsed_s", 0),     ".2f", False),
         ("Avg Attempts",       lambda d: d.get("overall", {}).get("mean_attempts", 0),      ".2f", False),
         ("Avg Iterations",     lambda d: d.get("overall", {}).get("mean_iterations", 0),    ".2f", False),
+        ("Tool-Call Efficiency", lambda d: d.get("overall", {}).get("mean_tool_call_efficiency", 0), ".3f", True),
+        ("Clean-Run Rate",     lambda d: d.get("overall", {}).get("clean_run_rate", 0),     ".3f", True),
+        ("Stop-Hook Blocks",   lambda d: d.get("overall", {}).get("total_stop_blocks", 0),  "d",   False),
+        ("Runs/Case",          lambda d: int(d.get("runs_per_case", 1)),                    "d",   False),
+        ("Run-to-run Std",     lambda d: d.get("overall", {}).get("mean_case_score_stdev", 0), ".3f", False),
         ("Perfect Cases",      lambda d: len(d.get("overall", {}).get("perfect_cases", [])),"d",   True),
         ("Failed Cases",       lambda d: len(d.get("overall", {}).get("failed_cases", [])), "d",   False),
     ]
@@ -930,7 +1058,7 @@ def _render_compare_panel(all_data: Dict[str, Dict[str, Any]]) -> str:
         + perf_model_headers + '</tr>' + perf_rows + '</table></div>'
     )
 
-    return leaderboard_html + test_compare_html + tag_compare_html + case_compare_html + perf_html
+    return leaderboard_html + test_compare_html + case_compare_html + perf_html
 
 
 # ============================================================
