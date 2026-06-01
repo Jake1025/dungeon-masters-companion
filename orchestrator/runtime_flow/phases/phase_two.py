@@ -1,8 +1,34 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Sequence
+import json
 from ..turn_context import TurnContext
 from ..turn_heuristics import _PHASE_2_TOOL_NAME_PATTERN, _extract_labeled_line
+from .phase_one import _iter_brace_objects
+
+
+def _salvage_writes_payload(text: str) -> Optional[Dict[str, Any]]:
+    """
+    Recover a finalize_writes payload written as text instead of called as a tool.
+    Returns a normalised payload only when a non-empty writes_summary can be recovered, otherwise None.
+    """
+    if not text:
+        return None
+    for chunk in _iter_brace_objects(text):
+        if "writes_summary" not in chunk:
+            continue
+        try:
+            payload = json.loads(chunk)
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        summary = payload.get("writes_summary")
+        summary = "" if summary is None else str(summary).strip()
+        if not summary:
+            continue
+        return {"writes_summary": summary}
+    return None
 
 
 @dataclass
@@ -195,27 +221,35 @@ class Phase2Runner:
                 return "Every response must include a `Decision Summary:` line."
             if not _extract_labeled_line(text, "Decision Summary"):
                 return "Every response must begin with `Decision Summary: ...`."
-            if (
-                not tool_calls
-                and turn_ctx.finalize_writes is None
-                and _PHASE_2_TOOL_NAME_PATTERN.search(text)
-            ):
-                return (
-                    "Detected a tool name written as text instead of called "
-                    "as a tool. Issue a real function call."
-                )
+            if not tool_calls and turn_ctx.finalize_writes is None:
+                wrote_name = bool(_PHASE_2_TOOL_NAME_PATTERN.search(text))
+                wrote_payload = _salvage_writes_payload(text) is not None
+                if wrote_name or wrote_payload:
+                    return (
+                        "Your finalize_writes content was written as text, so "
+                        "nothing ran. finalize_writes is a function you must call "
+                        "through the tool interface, not text to print. Re-issue "
+                        "it as a real tool call. Do not paste the JSON into your "
+                        "message."
+                    )
             return None
 
         def stop_hook(assistant_text: str, already_fired: bool) -> Optional[str]:
-            _ = assistant_text
-            if turn_ctx.finalize_writes is None:
-                return (
-                    "The writer phase is not finished. Call `finalize_writes` "
-                    "now with this shape: "
-                    '{"writes_summary": "<short summary of writes applied>"}. '
-                    "Do not call any other tools first."
-                )
-            return None
+            if turn_ctx.finalize_writes is not None:
+                return None
+            salvaged = _salvage_writes_payload(str(assistant_text or ""))
+            if salvaged is not None:
+                salvaged["salvaged_from_text"] = True
+                turn_ctx.finalize_writes = salvaged
+                return None
+            return (
+                "The writer phase is not finished, and nothing has been "
+                "finalized. You must finish by CALLING the finalize_writes "
+                "function through the tool interface. Writing its name or its "
+                "JSON in your message does not run it. Make the finalize_writes "
+                "tool call now, with no other tools first, and do not put any "
+                "JSON in the message body."
+            )
 
         if self.adapter.verbose:
             print("\n[PHASE_TWO] Running writer phase")

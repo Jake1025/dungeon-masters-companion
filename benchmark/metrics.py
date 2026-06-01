@@ -228,6 +228,84 @@ def _extract_corrections(rounds: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
+def _extract_stop_blocks(rounds: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Pull stop-hook blocks out of the agent-loop round records.
+
+    A stop block happens when the model produced no tool call (it tried to
+    finish) but the phase was not actually finalized, so the loop pushed it to
+    continue. A clean run has zero stop blocks. Repeated stop blocks are the
+    "wrote the tool call as text instead of calling it" failure mode and waste
+    iterations, so models are scored down for them.
+    """
+    out: List[Dict[str, Any]] = []
+    for i, rnd in enumerate(rounds or []):
+        reason = rnd.get("stop_block_reason") or ""
+        if reason:
+            out.append({"iteration": rnd.get("iteration", i), "reason": reason})
+    return out
+
+
+def _necessary_tool_calls(expected_entries: List[Any]) -> int:
+    """
+    The minimum number of tool calls a perfect run needs: one call per expected
+    entry (an OR-group counts as one) plus the phase's single terminal finalize
+    call.
+    """
+    return len(expected_entries or []) + 1
+
+
+def _necessary_phase_two_calls(
+    expected_entries: List[Any],
+    expected_memory_writes: List[str],
+) -> int:
+    """
+    Phase 2 minimum, accounting for the fact that write_memory_tool is normally
+    called several times in one turn (once per entity that should receive a
+    memory line).
+
+    A correct Phase 2 run makes:
+      - one write_memory_tool call per entity in expected_memory_writes, and
+      - one call for every other expected tool entry (move_to_location,
+        move_npc, create_npc, create_item, move_world_item, ...), and
+      - one terminal finalize_writes call.
+
+    write_memory_tool is counted from expected_memory_writes rather than from
+    its single entry in expected_tools_called, so a turn that legitimately
+    writes three memories is not penalised as if it should have made one call.
+    A non-write entry that also happens to be write_memory_tool is not
+    double-counted. If a case lists write_memory_tool but declares no
+    expected_memory_writes, it still counts as the usual one call.
+    """
+    writes = len(expected_memory_writes or [])
+    non_write_entries = 0
+    has_write_entry = False
+    for entry in expected_entries or []:
+        names = _expected_entry_names(entry)
+        if names == {"write_memory_tool"}:
+            has_write_entry = True
+            continue
+        non_write_entries += 1
+    if has_write_entry and writes == 0:
+        writes = 1
+    return writes + non_write_entries + 1
+
+
+def _tool_call_efficiency(necessary: int, actual: int) -> float:
+    """
+    1.0 when the model used no more calls than the necessary minimum.
+
+    Above the minimum, efficiency is the fraction of calls that were necessary
+    (necessary / actual), so redundant or duplicate calls pull the score down
+    smoothly. Bounded in (0.0, 1.0].
+    """
+    necessary = max(int(necessary), 1)
+    actual = int(actual)
+    if actual <= necessary:
+        return 1.0
+    return round(necessary / actual, 3)
+
+
 # ============================================================
 # Phase 1 scoring
 # ============================================================
@@ -286,7 +364,21 @@ def score_phase_one(
     if case.max_iterations > 0:
         iterations_ok = iterations <= case.max_iterations
 
-    fields: List[bool] = [finalize_ok, blocked_ok, expected_tools_ok, no_unexpected_tools]
+    # Stop-hook blocks: a clean run never gets pushed to continue after trying
+    # to finish. Each block is a wasted iteration and usually the
+    # "tool call written as text" failure mode.
+    stop_blocks = _extract_stop_blocks(loop_result.get("rounds", []))
+    stop_block_count = len(stop_blocks)
+    no_stop_blocks = stop_block_count == 0
+
+    # Tool-call economy: reward using no more calls than the necessary minimum.
+    tool_call_count = len(phase_one_tool_calls)
+    necessary_tool_calls = _necessary_tool_calls(case.expected_tools_called)
+    tool_call_efficiency = _tool_call_efficiency(necessary_tool_calls, tool_call_count)
+
+    fields: List[float] = [finalize_ok, blocked_ok, expected_tools_ok, no_unexpected_tools]
+    fields.append(no_stop_blocks)
+    fields.append(tool_call_efficiency)
     if case.expected_turn_summary_keywords:
         fields.append(summary_keywords_ok)
     if case.expected_narration_focus_keywords:
@@ -296,13 +388,13 @@ def score_phase_one(
 
     return {
         "case_id": case.id,
-        "case_tags": case.tags,
         "description": case.description,
         "player_input": case.player_input,
         "finalize_called": finalize_called,
         "finalize_ok": finalize_ok,
         "blocked": blocked,
         "blocked_ok": blocked_ok,
+        "expect_blocked": case.expect_blocked,
         "expected_tools": [_format_expected_entry(e) for e in case.expected_tools_called],
         "actual_tools": called_names,
         "expected_tools_ok": expected_tools_ok,
@@ -324,9 +416,19 @@ def score_phase_one(
         "all_rounds": loop_result.get("rounds", []),
         "corrections": _extract_corrections(loop_result.get("rounds", [])),
         "correction_count": len(_extract_corrections(loop_result.get("rounds", []))),
+        "stop_blocks": stop_blocks,
+        "stop_block_count": stop_block_count,
+        "no_stop_blocks": no_stop_blocks,
+        "tool_call_count": tool_call_count,
+        "necessary_tool_calls": necessary_tool_calls,
+        "tool_call_efficiency": tool_call_efficiency,
         "tool_trace": phase_one_tool_calls,
         "error": error,
-        "all_correct": all(fields),
+        "all_correct": (
+            finalize_ok and blocked_ok and expected_tools_ok and no_unexpected_tools
+            and summary_keywords_ok and focus_keywords_ok and iterations_ok
+            and no_stop_blocks and tool_call_efficiency >= 1.0
+        ),
         "score": round(sum(float(f) for f in fields) / len(fields), 3) if fields else 0.0,
     }
 
@@ -463,7 +565,6 @@ def score_narration(
 
     return {
         "case_id": case.id,
-        "case_tags": case.tags,
         "description": case.description,
         "player_input": case.player_input,
         "checks": checks,
@@ -518,7 +619,7 @@ def _state_change_breakdown(
     """
     Compare expected state mutations against the actual before/after diff.
 
-    Categories: player_location, npc_locations, quest_flags, visited_locations,
+    Categories: player_location, npc_locations, visited_locations,
     discovered_locations, memory_writes.
 
     For each category an expected mutation that occurred is a TP, an expected
@@ -572,32 +673,7 @@ def _state_change_breakdown(
                 f"-> {change.get('after', '') or '(none)'}"
             )
 
-    # ---- 3. Quest flags ----
-    expected_flags = dict(case.expected_quest_flags_after or {})
-    before_flags = dict(before.get("quest_flags") or {})
-    after_flags = dict(after.get("quest_flags") or {})
-
-    matched_flags: Set[str] = set()
-    for flag, exp_val in expected_flags.items():
-        prev = before_flags.get(flag)
-        if exp_val != prev:
-            label = f"quest_flag[{flag}]: {prev} -> {exp_val}"
-            if after_flags.get(flag) == exp_val:
-                expected_observed.append(label)
-            else:
-                expected_missing.append(
-                    f"{label} (actual: {after_flags.get(flag)})"
-                )
-            matched_flags.add(flag)
-
-    for change in diff.get("quest_flag_changes") or []:
-        flag = change.get("flag", "")
-        if flag and flag not in matched_flags:
-            unexpected.append(
-                f"quest_flag[{flag}]: {change.get('before')} -> {change.get('after')}"
-            )
-
-    # ---- 4. Visited locations ----
+    # ---- 3. Visited locations ----
     expected_visited = list(case.expected_visited_added or [])
     actual_visited_added = set((diff.get("visited_locations") or {}).get("added") or [])
 
@@ -614,7 +690,7 @@ def _state_change_breakdown(
         if loc not in matched_visited:
             unexpected.append(f"visited_added: {loc}")
 
-    # ---- 5. Discovered locations ----
+    # ---- 4. Discovered locations ----
     expected_discovered = list(case.expected_discovered_added or [])
     actual_discovered_added = set((diff.get("discovered_locations") or {}).get("added") or [])
 
@@ -631,7 +707,7 @@ def _state_change_breakdown(
         if loc not in matched_discovered:
             unexpected.append(f"discovered_added: {loc}")
 
-    # ---- 6. Memory writes ----
+    # ---- 5. Memory writes ----
     expected_memory = list(case.expected_memory_writes or [])
     actual_memory_targets = _memory_write_targets(phase_two_tool_calls)
 
@@ -728,7 +804,19 @@ def score_phase_two(
     if case.max_iterations > 0:
         iterations_ok = iterations <= case.max_iterations
 
-    fields: List[bool] = [
+    # Stop-hook blocks and tool-call economy (see score_phase_one for rationale).
+    stop_blocks = _extract_stop_blocks(loop_result.get("rounds", []))
+    stop_block_count = len(stop_blocks)
+    no_stop_blocks = stop_block_count == 0
+
+    tool_call_count = len(phase_two_tool_calls)
+    necessary_tool_calls = _necessary_phase_two_calls(
+        case.expected_tools_called,
+        getattr(case, "expected_memory_writes", []),
+    )
+    tool_call_efficiency = _tool_call_efficiency(necessary_tool_calls, tool_call_count)
+
+    fields: List[float] = [
         finalize_writes_ok,
         expected_tools_ok,
         no_unexpected_tools,
@@ -736,6 +824,8 @@ def score_phase_two(
         state_changes_ok,
         no_unexpected_state_changes,
     ]
+    fields.append(no_stop_blocks)
+    fields.append(tool_call_efficiency)
     if case.expected_writes_summary_keywords:
         fields.append(summary_keywords_ok)
     if case.max_iterations > 0:
@@ -743,7 +833,6 @@ def score_phase_two(
 
     return {
         "case_id": case.id,
-        "case_tags": case.tags,
         "description": case.description,
         "player_input": case.player_input,
         "finalize_writes_called": finalize_writes_called,
@@ -774,11 +863,107 @@ def score_phase_two(
         "all_rounds": loop_result.get("rounds", []),
         "corrections": _extract_corrections(loop_result.get("rounds", [])),
         "correction_count": len(_extract_corrections(loop_result.get("rounds", []))),
+        "stop_blocks": stop_blocks,
+        "stop_block_count": stop_block_count,
+        "no_stop_blocks": no_stop_blocks,
+        "tool_call_count": tool_call_count,
+        "necessary_tool_calls": necessary_tool_calls,
+        "tool_call_efficiency": tool_call_efficiency,
         "tool_trace": phase_two_tool_calls,
         "error": error,
-        "all_correct": all(fields),
+        "all_correct": (
+            finalize_writes_ok and expected_tools_ok and no_unexpected_tools
+            and location_ok and state_changes_ok and no_unexpected_state_changes
+            and summary_keywords_ok and iterations_ok
+            and no_stop_blocks and tool_call_efficiency >= 1.0
+        ),
         "score": round(sum(float(f) for f in fields) / len(fields), 3) if fields else 0.0,
     }
+
+
+# ============================================================
+# Multi-run aggregation
+# ============================================================
+
+def _mean(values: List[float]) -> float:
+    nums = [float(v) for v in values if isinstance(v, (int, float)) and not isinstance(v, bool)]
+    return sum(nums) / len(nums) if nums else 0.0
+
+
+def _stdev(values: List[float]) -> float:
+    nums = [float(v) for v in values if isinstance(v, (int, float)) and not isinstance(v, bool)]
+    if len(nums) < 2:
+        return 0.0
+    mean = sum(nums) / len(nums)
+    var = sum((v - mean) ** 2 for v in nums) / (len(nums) - 1)
+    return var ** 0.5
+
+
+# Numeric per-case fields that are meaningful to average across runs.
+_AVERAGED_FIELDS = (
+    "elapsed_s",
+    "iterations",
+    "correction_count",
+    "tool_call_efficiency",
+    "stop_block_count",
+    "tool_call_count",
+    "word_count",
+    "attempts",
+)
+
+
+def aggregate_runs(run_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Collapse N per-run result dicts for a single case into one aggregated
+    result whose headline numbers are averages, while preserving every
+    individual run under "runs" so the report can show them in dropdowns.
+
+    With a single run this is a no-op (the lone result is returned unchanged),
+    so single-run behaviour is byte-for-byte identical to before.
+
+    The aggregate keeps the first run's static fields (case_id, description,
+    expected_*), replaces numeric outcome fields with their mean across runs,
+    and adds:
+      n_runs, runs, score_values, score, score_stdev, score_min, score_max,
+      pass_rate (fraction of runs that were fully correct),
+      all_correct (True only if every run was fully correct),
+      stop_block_total (sum of stop-hook blocks across all runs).
+    """
+    if not run_results:
+        return {}
+    n = len(run_results)
+    if n == 1:
+        return run_results[0]
+
+    base = dict(run_results[0])
+    scores = [float(r.get("score", 0.0)) for r in run_results]
+    pass_flags = [bool(r.get("all_correct", False)) for r in run_results]
+
+    base["n_runs"] = n
+    base["runs"] = run_results
+    base["score_values"] = [round(s, 3) for s in scores]
+    base["score"] = round(_mean(scores), 3)
+    base["score_stdev"] = round(_stdev(scores), 3)
+    base["score_min"] = round(min(scores), 3)
+    base["score_max"] = round(max(scores), 3)
+    base["pass_rate"] = round(sum(1 for p in pass_flags if p) / n, 3)
+    base["all_correct"] = all(pass_flags)
+
+    for key in _AVERAGED_FIELDS:
+        vals = [
+            r[key] for r in run_results
+            if isinstance(r.get(key), (int, float)) and not isinstance(r.get(key), bool)
+        ]
+        if vals:
+            base[key] = round(_mean(vals), 3)
+
+    # Total stop-hook blocks across all runs (kept as an int for clean display
+    # and for model-level totals).
+    base["stop_block_total"] = sum(
+        int(r.get("stop_block_count", 0) or 0) for r in run_results
+    )
+
+    return base
 
 
 # ============================================================
@@ -797,17 +982,42 @@ def summarize_results(results: List[Dict[str, Any]]) -> Dict[str, Any]:
     mean_attempts = sum(attempt_values) / len(attempt_values) if attempt_values else 0.0
     mean_iterations = sum(iteration_values) / len(iteration_values) if iteration_values else 0.0
 
-    tag_scores: Dict[str, List[float]] = {}
-    for r in results:
-        for tag in r.get("case_tags", []):
-            tag_scores.setdefault(tag, []).append(r.get("score", 0))
-    tag_summary = {
-        tag: round(sum(scores) / len(scores), 3)
-        for tag, scores in tag_scores.items()
-    }
+    # Stop-hook and tool-call-economy aggregates. Only cases that carry these
+    # keys (phase one / phase two) are counted.
+    efficiency_values = [
+        r["tool_call_efficiency"] for r in results if "tool_call_efficiency" in r
+    ]
+    mean_tool_call_efficiency = (
+        sum(efficiency_values) / len(efficiency_values) if efficiency_values else 0.0
+    )
+    stop_block_cases = [r for r in results if "stop_block_count" in r]
+
+    def _case_stop_blocks(r: Dict[str, Any]) -> int:
+        # For multi-run cases use the total across all runs; for single runs the
+        # per-case count is already that total.
+        if "stop_block_total" in r:
+            return int(r.get("stop_block_total", 0) or 0)
+        return int(round(float(r.get("stop_block_count", 0) or 0)))
+
+    total_stop_blocks = sum(_case_stop_blocks(r) for r in stop_block_cases)
+    cases_with_stop_blocks = sum(
+        1 for r in stop_block_cases if _case_stop_blocks(r) > 0
+    )
+    clean_run_rate = (
+        round(1.0 - cases_with_stop_blocks / len(stop_block_cases), 3)
+        if stop_block_cases else 1.0
+    )
 
     failed = [r["case_id"] for r in results if r.get("score", 1) < 0.5]
     perfect = [r["case_id"] for r in results if r.get("all_correct", False)]
+
+    # Run-to-run variance: mean of per-case score stdev across cases. Single-run
+    # cases have no stdev (treated as 0), so this is 0 unless cases were repeated.
+    case_stdevs = [float(r.get("score_stdev", 0.0)) for r in results]
+    mean_case_score_stdev = sum(case_stdevs) / len(case_stdevs) if case_stdevs else 0.0
+    multi_run_cases = [int(r.get("n_runs", 1)) for r in results]
+    max_runs_per_case = max(multi_run_cases) if multi_run_cases else 1
+    is_multi_run = max_runs_per_case > 1
 
     # Aggregate TP/FP/FN across cases for both layers, where present.
     fn_tp = fn_fp = fn_fn = 0
@@ -833,7 +1043,13 @@ def summarize_results(results: List[Dict[str, Any]]) -> Dict[str, Any]:
         "mean_elapsed_s": round(mean_elapsed, 3),
         "mean_attempts": round(mean_attempts, 3),
         "mean_iterations": round(mean_iterations, 3),
-        "per_tag": tag_summary,
+        "mean_tool_call_efficiency": round(mean_tool_call_efficiency, 3),
+        "mean_case_score_stdev": round(mean_case_score_stdev, 3),
+        "max_runs_per_case": max_runs_per_case,
+        "is_multi_run": is_multi_run,
+        "total_stop_blocks": total_stop_blocks,
+        "cases_with_stop_blocks": cases_with_stop_blocks,
+        "clean_run_rate": clean_run_rate,
         "failed_cases": failed,
         "perfect_cases": perfect,
     }
@@ -849,5 +1065,6 @@ __all__ = [
     "score_phase_one",
     "score_narration",
     "score_phase_two",
+    "aggregate_runs",
     "summarize_results",
 ]

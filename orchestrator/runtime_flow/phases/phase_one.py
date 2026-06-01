@@ -21,6 +21,71 @@ _PHASE_ONE_CACHEABLE_TOOLS = frozenset({
 })
 
 
+# Keys that identify a finalize_turn payload emitted as text.
+_FINALIZE_KEYS = ("turn_summary", "narration_focus", "blocked_reason")
+
+
+def _coerce_str(value: Any) -> str:
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+def _iter_brace_objects(text: str):
+    depth = 0
+    start = -1
+    for i, ch in enumerate(text):
+        if ch == "{":
+            if depth == 0:
+                start = i
+            depth += 1
+        elif ch == "}":
+            if depth > 0:
+                depth -= 1
+                if depth == 0 and start >= 0:
+                    yield text[start:i + 1]
+                    start = -1
+
+
+def _salvage_finalize_payload(text: str) -> Optional[Dict[str, Any]]:
+    """
+    Recover a finalize_turn payload that the model wrote as text instead of doing a tool call.
+
+    Handles three shapes seen in practice:
+      1. A bare JSON object somewhere in the message.
+      2. A JSON object inside a fenced ```json ... ``` block.
+      3. A finalize_turn(...) / "Action: finalize_turn {...}" call written
+         inline, where the braces hold the JSON payload.
+
+    Returns a normalised payload dict (always carrying the three finalize keys)
+    only when at least turn_summary can be recovered; otherwise None. The intent
+    is to terminate the turn with the model's own content rather than burn
+    iterations, NOT to reward the mistake: the caller still records that no real
+    tool call was made.
+    """
+    if not text:
+        return None
+
+    for chunk in _iter_brace_objects(text):
+        if not any(k in chunk for k in _FINALIZE_KEYS):
+            continue
+        try:
+            payload = json.loads(chunk)
+        except (ValueError, TypeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        summary = _coerce_str(payload.get("turn_summary"))
+        if not summary:
+            continue
+        return {
+            "turn_summary": summary,
+            "narration_focus": _coerce_str(payload.get("narration_focus")),
+            "blocked_reason": _coerce_str(payload.get("blocked_reason")),
+        }
+    return None
+
+
 @dataclass
 class PhaseOneInput:
     """Everything Phase 1 needs to run. No engine reference; pass game_state + world directly."""
@@ -216,16 +281,21 @@ class Phase1Runner:
                 return "Every response must include a `Decision Summary:` line."
             if not _extract_labeled_line(text, "Decision Summary"):
                 return "Every response must begin with `Decision Summary: ...`."
-            # Catch the "tool call as text" failure mode: the model wrote a tool name in markdown but did not actually call it.
-            if (
-                not tool_calls
-                and turn_ctx.finalize is None
-                and re.search(r"(?i)\b(tool|function)\s*:\s*finalize_turn\b", text)
-            ):
-                return (
-                    "Detected `finalize_turn` written as text instead of called "
-                    "as a tool. Issue a real function call to finalize_turn."
-                )
+            # Catch the "finalize as text" failure mode in both its forms:
+            # the model names finalize_turn in prose, OR it emits the bare payload
+            # object (the JSON with turn_summary / narration_focus keys) with no
+            # real tool call. Either way nothing ran and the turn is unfinalized.
+            if not tool_calls and turn_ctx.finalize is None:
+                wrote_name = bool(re.search(r"(?i)finalize_turn", text))
+                wrote_payload = _salvage_finalize_payload(text) is not None
+                if wrote_name or wrote_payload:
+                    return (
+                        "Your finalize_turn content was written as text, so "
+                        "nothing ran. finalize_turn is a function you must call "
+                        "through the tool interface, not text to print. Re-issue "
+                        "it as a real tool call. Do not paste the JSON into your "
+                        "message."
+                    )
             if (
                 not tool_calls
                 and _mentions_unresolved_roll_request(text)
@@ -236,19 +306,23 @@ class Phase1Runner:
             return None
 
         def stop_hook(assistant_text: str, already_fired: bool) -> Optional[str]:
-            _ = assistant_text
-            if turn_ctx.finalize is None:
-                return (
-                    "The phase is not finished. Call `finalize_turn` now "
-                    "with this exact shape: "
-                    '{"turn_summary": "<what happened this turn>", '
-                    '"narration_focus": "<what the narrator should describe>", '
-                    '"blocked_reason": ""}. '
-                    "If something blocked the action, put the reason in "
-                    "blocked_reason instead of leaving it empty. Do not "
-                    "call any other tools first."
-                )
-            return None
+            if turn_ctx.finalize is not None:
+                return None
+            # Last resort: if the model kept writing the finalize payload as text
+            # instead of calling the tool, recover it so the turn terminates with
+            # the model's own content rather than exhausting all iterations.
+            salvaged = _salvage_finalize_payload(str(assistant_text or ""))
+            if salvaged is not None:
+                salvaged["salvaged_from_text"] = True
+                turn_ctx.finalize = salvaged
+                return None
+            return (
+                "The phase is not finished, and nothing has been finalized. You "
+                "must finish by CALLING the finalize_turn function through the "
+                "tool interface. Writing its name or its JSON in your message "
+                "does not run it. Make the finalize_turn tool call now, with no "
+                "other tools first, and do not put any JSON in the message body."
+            )
 
         loop_result = self.adapter.run_tool_loop(
             stage="phase_one",
